@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  title         String
+  sku           String   @unique
+  brand         String?
+  category      String?
+  description   String?
+  costPrice     Decimal  @db.Decimal(12, 2)
+  sellingPrice  Decimal  @db.Decimal(12, 2)
+  marginPercent Decimal  @db.Decimal(6, 2)
+  quantity      Int
+  reorderLevel  Int      @default(5)
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  inventoryLogs InventoryLog[]
+
+  @@index([brand])
+  @@index([category])
+  @@index([quantity])
+  @@index([createdAt])
+}
+
+model InventoryLog {
+  id        String   @id @default(cuid())
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  type      String
+  quantity  Int?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([type])
+  @@index([createdAt])
+}

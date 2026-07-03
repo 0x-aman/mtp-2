@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+build
+dist
+.env
+.env*.local
+*.tsbuildinfo
+public/uploads/*
+!public/uploads/.gitkeep
+prisma/*.db
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md
