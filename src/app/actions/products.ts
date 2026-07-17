@@ -45,6 +45,9 @@ function cleanInput(input: ProductInput) {
     marginPercent: calculateMarginPercent(input.costPrice, input.sellingPrice),
     quantity: input.quantity,
     reorderLevel: input.reorderLevel,
+    isMachine: input.isMachine,
+    defaultRentDeposit: input.isMachine ? input.defaultRentDeposit : null,
+    defaultDailyRent: input.isMachine ? input.defaultDailyRent : null,
     imageUrl: input.imageUrl || null
   };
 }
@@ -84,6 +87,9 @@ function productRecord(product: {
   quantity: number;
   reorderLevel: number;
   imageUrl: string | null;
+  isMachine: boolean;
+  defaultRentDeposit: unknown;
+  defaultDailyRent: unknown;
   createdAt: Date;
   updatedAt: Date;
 }): ProductRecord {
@@ -100,6 +106,9 @@ function productRecord(product: {
     quantity: product.quantity,
     reorderLevel: product.reorderLevel,
     imageUrl: product.imageUrl,
+    isMachine: product.isMachine,
+    defaultRentDeposit: product.defaultRentDeposit == null ? null : Number(product.defaultRentDeposit),
+    defaultDailyRent: product.defaultDailyRent == null ? null : Number(product.defaultDailyRent),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString()
   };
@@ -458,6 +467,9 @@ export async function duplicateProductAction(product: ProductRecord): Promise<Ac
     sellingPrice: product.sellingPrice,
     quantity: product.quantity,
     reorderLevel: product.reorderLevel,
+    isMachine: product.isMachine,
+    defaultRentDeposit: product.defaultRentDeposit ?? 0,
+    defaultDailyRent: product.defaultDailyRent ?? 0,
     imageUrl: product.imageUrl ?? ""
   });
 }

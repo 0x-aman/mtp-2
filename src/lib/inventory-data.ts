@@ -22,6 +22,9 @@ function productToRecord(product: {
   quantity: number;
   reorderLevel: number;
   imageUrl: string | null;
+  isMachine: boolean;
+  defaultRentDeposit: unknown;
+  defaultDailyRent: unknown;
   createdAt: Date;
   updatedAt: Date;
 }): ProductRecord {
@@ -38,6 +41,9 @@ function productToRecord(product: {
     quantity: product.quantity,
     reorderLevel: product.reorderLevel,
     imageUrl: product.imageUrl,
+    isMachine: product.isMachine,
+    defaultRentDeposit: product.defaultRentDeposit == null ? null : Number(product.defaultRentDeposit),
+    defaultDailyRent: product.defaultDailyRent == null ? null : Number(product.defaultDailyRent),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString()
   };
@@ -115,7 +121,10 @@ function productToSuggestion(product: ProductRecord): ProductFormSuggestion {
     costPrice: product.costPrice,
     sellingPrice: product.sellingPrice,
     quantity: product.quantity,
-    reorderLevel: product.reorderLevel
+    reorderLevel: product.reorderLevel,
+    isMachine: product.isMachine,
+    defaultRentDeposit: product.defaultRentDeposit,
+    defaultDailyRent: product.defaultDailyRent
   };
 }
 

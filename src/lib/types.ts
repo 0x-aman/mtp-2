@@ -11,6 +11,9 @@ export type ProductRecord = {
   quantity: number;
   reorderLevel: number;
   imageUrl: string | null;
+  isMachine: boolean;
+  defaultRentDeposit: number | null;
+  defaultDailyRent: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -50,6 +53,57 @@ export type ProductFormSuggestion = {
   sellingPrice: number;
   quantity: number;
   reorderLevel: number;
+  isMachine: boolean;
+  defaultRentDeposit: number | null;
+  defaultDailyRent: number | null;
+};
+
+export type RentableMachineRecord = {
+  id: string;
+  title: string;
+  sku: string;
+  brand: string | null;
+  category: string | null;
+  quantity: number;
+  defaultRentDeposit: number | null;
+  defaultDailyRent: number | null;
+  openRentals: number;
+  availableForRent: number;
+};
+
+export type RentalRecord = {
+  id: string;
+  productId: string | null;
+  machineTitle: string;
+  machineSku: string;
+  customerName: string | null;
+  customerPhone: string | null;
+  deposit: number;
+  dailyRent: number;
+  startedAt: string;
+  closedAt: string | null;
+  calendarDays: number | null;
+  rentTotal: number | null;
+  depositBalance: number | null;
+  status: "OPEN" | "CLOSED";
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RentalMetrics = {
+  machineCount: number;
+  availableMachines: number;
+  openRentals: number;
+  depositsHeld: number;
+};
+
+export type RentalDataset = {
+  machines: RentableMachineRecord[];
+  rentals: RentalRecord[];
+  metrics: RentalMetrics;
+  databaseReady: boolean;
+  error?: string;
 };
 
 export type ProductFormOptions = {

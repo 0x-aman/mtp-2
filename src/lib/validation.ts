@@ -7,6 +7,18 @@ const money = z.coerce
   })
   .min(0, "Price cannot be negative");
 
+const booleanish = z.preprocess((value) => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return ["1", "true", "yes", "machine", "rent", "rentable"].includes(value.trim().toLowerCase());
+  }
+
+  return Boolean(value);
+}, z.boolean());
+
 export const productSchema = z.object({
   title: z.string().trim().min(2, "Product title is required"),
   sku: z
@@ -21,6 +33,9 @@ export const productSchema = z.object({
   sellingPrice: money,
   quantity: z.coerce.number().int().min(0, "Quantity cannot be negative"),
   reorderLevel: z.coerce.number().int().min(0, "Reorder level cannot be negative").default(5),
+  isMachine: booleanish.default(false),
+  defaultRentDeposit: money.default(0),
+  defaultDailyRent: money.default(0),
   imageUrl: z
     .string()
     .trim()
@@ -39,6 +54,16 @@ export const bulkStockSchema = z.object({
   quantity: z.coerce.number().int().min(0, "Enter a non-negative quantity")
 });
 
+export const createRentalSchema = z.object({
+  productId: z.string().min(1, "Choose a machine"),
+  customerName: z.string().trim().optional().nullable(),
+  customerPhone: z.string().trim().optional().nullable(),
+  deposit: money,
+  dailyRent: money,
+  note: z.string().trim().optional().nullable()
+});
+
 export type ProductInput = z.infer<typeof productSchema>;
 export type CsvProductInput = z.infer<typeof csvProductSchema>;
 export type BulkStockInput = z.infer<typeof bulkStockSchema>;
+export type CreateRentalInput = z.infer<typeof createRentalSchema>;

@@ -46,6 +46,33 @@ export function compactDate(value: string | Date) {
   }).format(new Date(value));
 }
 
+function calendarDayNumber(value: string | Date) {
+  const date = new Date(value);
+
+  return Math.floor(new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() / 86_400_000);
+}
+
+export function calculateRentalCalendarDays(start: string | Date, end: string | Date = new Date()) {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return 1;
+  }
+
+  return Math.max(1, calendarDayNumber(endDate) - calendarDayNumber(startDate) + 1);
+}
+
+export function formatDateTime(value: string | Date) {
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
 export function toCsvCell(value: unknown) {
   const text = value == null ? "" : String(value);
   if (/[",\n\r]/.test(text)) {

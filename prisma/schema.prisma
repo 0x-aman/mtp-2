@@ -8,27 +8,32 @@ datasource db {
 }
 
 model Product {
-  id            String   @id @default(cuid())
-  title         String
-  sku           String   @unique
-  brand         String?
-  category      String?
-  description   String?
-  costPrice     Decimal  @db.Decimal(12, 2)
-  sellingPrice  Decimal  @db.Decimal(12, 2)
-  marginPercent Decimal  @db.Decimal(6, 2)
-  quantity      Int
-  reorderLevel  Int      @default(5)
-  imageUrl      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  title              String
+  sku                String   @unique
+  brand              String?
+  category           String?
+  description        String?
+  costPrice          Decimal  @db.Decimal(12, 2)
+  sellingPrice       Decimal  @db.Decimal(12, 2)
+  marginPercent      Decimal  @db.Decimal(6, 2)
+  quantity           Int
+  reorderLevel       Int      @default(5)
+  imageUrl           String?
+  isMachine          Boolean  @default(false)
+  defaultRentDeposit Decimal? @db.Decimal(12, 2)
+  defaultDailyRent   Decimal? @db.Decimal(12, 2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   inventoryLogs InventoryLog[]
+  rentals       Rental[]
 
   @@index([brand])
   @@index([category])
   @@index([quantity])
   @@index([createdAt])
+  @@index([isMachine])
 }
 
 model InventoryLog {
@@ -43,4 +48,30 @@ model InventoryLog {
   @@index([productId])
   @@index([type])
   @@index([createdAt])
+}
+
+model Rental {
+  id             String   @id @default(cuid())
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  machineTitle   String
+  machineSku     String
+  customerName   String?
+  customerPhone  String?
+  deposit        Decimal  @db.Decimal(12, 2)
+  dailyRent      Decimal  @db.Decimal(12, 2)
+  startedAt      DateTime @default(now())
+  closedAt       DateTime?
+  calendarDays   Int?
+  rentTotal      Decimal? @db.Decimal(12, 2)
+  depositBalance Decimal? @db.Decimal(12, 2)
+  status         String   @default("OPEN")
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([productId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([closedAt])
 }

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { ProductFormOptions, ProductFormSuggestion, ProductRecord } from "@/lib/types";
 import { calculateMarginPercent, formatCurrency } from "@/lib/utils";
@@ -64,12 +65,16 @@ export function ProductForm({
       sellingPrice: product?.sellingPrice ?? 0,
       quantity: product?.quantity ?? 0,
       reorderLevel: product?.reorderLevel ?? 5,
+      isMachine: product?.isMachine ?? false,
+      defaultRentDeposit: product?.defaultRentDeposit ?? 0,
+      defaultDailyRent: product?.defaultDailyRent ?? 0,
       imageUrl: fieldValue(product?.imageUrl)
     }
   });
 
   const costPrice = form.watch("costPrice");
   const sellingPrice = form.watch("sellingPrice");
+  const isMachine = form.watch("isMachine");
   const margin = useMemo(
     () => calculateMarginPercent(Number(costPrice), Number(sellingPrice)),
     [costPrice, sellingPrice]
@@ -107,6 +112,9 @@ export function ProductForm({
     form.setValue("costPrice", suggestion.costPrice, { shouldDirty: true });
     form.setValue("sellingPrice", suggestion.sellingPrice, { shouldDirty: true });
     form.setValue("quantity", suggestion.quantity, { shouldDirty: true });
+    form.setValue("isMachine", suggestion.isMachine, { shouldDirty: true });
+    form.setValue("defaultRentDeposit", suggestion.defaultRentDeposit ?? 0, { shouldDirty: true });
+    form.setValue("defaultDailyRent", suggestion.defaultDailyRent ?? 0, { shouldDirty: true });
   };
 
   const onSubmit = form.handleSubmit((values) => {
@@ -114,6 +122,9 @@ export function ProductForm({
       const nextValues: ProductInput = {
         ...values,
         reorderLevel: product?.reorderLevel ?? values.reorderLevel ?? 5,
+        isMachine: values.isMachine ?? false,
+        defaultRentDeposit: values.defaultRentDeposit ?? 0,
+        defaultDailyRent: values.defaultDailyRent ?? 0,
         imageUrl: product?.imageUrl ?? values.imageUrl ?? ""
       };
 
@@ -262,6 +273,51 @@ export function ProductForm({
               <p className="mt-1 text-xs text-muted-foreground">
                 Profit per unit: {formatCurrency(Math.max(0, Number(sellingPrice) - Number(costPrice)))}
               </p>
+            </div>
+
+            <div className="grid gap-4 rounded-lg border bg-muted/30 p-3 md:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <Label htmlFor="isMachine">Rentable Machine</Label>
+                </div>
+                <Switch
+                  id="isMachine"
+                  checked={Boolean(isMachine)}
+                  onCheckedChange={(checked) => form.setValue("isMachine", checked, { shouldDirty: true })}
+                />
+              </div>
+
+              {isMachine ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="defaultRentDeposit">Default Deposit</Label>
+                    <Input
+                      id="defaultRentDeposit"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      {...form.register("defaultRentDeposit", { valueAsNumber: true })}
+                    />
+                    {form.formState.errors.defaultRentDeposit ? (
+                      <p className="text-xs text-red-600">{form.formState.errors.defaultRentDeposit.message}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="defaultDailyRent">Default Daily Rent</Label>
+                    <Input
+                      id="defaultDailyRent"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      {...form.register("defaultDailyRent", { valueAsNumber: true })}
+                    />
+                    {form.formState.errors.defaultDailyRent ? (
+                      <p className="text-xs text-red-600">{form.formState.errors.defaultDailyRent.message}</p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="grid gap-2 md:col-span-2">

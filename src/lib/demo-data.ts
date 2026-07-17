@@ -17,6 +17,9 @@ export const demoProducts: ProductRecord[] = [
     quantity: 15,
     reorderLevel: 5,
     imageUrl: null,
+    isMachine: true,
+    defaultRentDeposit: 1500,
+    defaultDailyRent: 350,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString()
   },
@@ -33,6 +36,9 @@ export const demoProducts: ProductRecord[] = [
     quantity: 8,
     reorderLevel: 6,
     imageUrl: null,
+    isMachine: true,
+    defaultRentDeposit: 1200,
+    defaultDailyRent: 300,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString()
   },
@@ -49,6 +55,9 @@ export const demoProducts: ProductRecord[] = [
     quantity: 2,
     reorderLevel: 4,
     imageUrl: null,
+    isMachine: true,
+    defaultRentDeposit: 3000,
+    defaultDailyRent: 600,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString()
   },
@@ -65,6 +74,9 @@ export const demoProducts: ProductRecord[] = [
     quantity: 1,
     reorderLevel: 3,
     imageUrl: null,
+    isMachine: true,
+    defaultRentDeposit: 2500,
+    defaultDailyRent: 500,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString()
   }

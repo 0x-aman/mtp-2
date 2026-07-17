@@ -99,6 +99,9 @@ export function OcrImportClient({ defaultSku }: { defaultSku: string }) {
         sellingPrice: extraction.sellingPrice,
         quantity: extraction.quantity,
         reorderLevel: 5,
+        isMachine: false,
+        defaultRentDeposit: 0,
+        defaultDailyRent: 0,
         imageUrl
       });
 

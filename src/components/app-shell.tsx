@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Boxes,
+  Clock,
   Drill,
   FileUp,
   LogOut,
@@ -30,6 +31,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Inventory", icon: Boxes },
+  { href: "/rent", label: "Rent", icon: Clock },
   { href: "/products/new", label: "New Product", icon: PackagePlus },
   { href: "/import/csv", label: "Import CSV", icon: FileUp },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },

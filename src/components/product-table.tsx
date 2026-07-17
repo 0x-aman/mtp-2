@@ -119,7 +119,13 @@ function ProductMobileCard({
   return (
     <article className="rounded-lg border bg-card p-3">
       <div className="flex min-w-0 gap-3">
-        <ProductIcon title={product.title} brand={product.brand} category={product.category} className="size-14" />
+        <ProductIcon
+          title={product.title}
+          brand={product.brand}
+          category={product.category}
+          href={`/products/${product.id}`}
+          className="size-14"
+        />
         <div className="min-w-0 flex-1">
           <Link href={`/products/${product.id}`} className="block break-words text-sm font-semibold leading-5 hover:text-primary">
             {product.title}
@@ -240,7 +246,12 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
         id: "type",
         header: "Type",
         cell: ({ row }) => (
-          <ProductIcon title={row.original.title} brand={row.original.brand} category={row.original.category} />
+          <ProductIcon
+            title={row.original.title}
+            brand={row.original.brand}
+            category={row.original.category}
+            href={`/products/${row.original.id}`}
+          />
         ),
         enableSorting: false
       },
@@ -254,6 +265,7 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
             </Link>
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <Badge variant="outline">{row.original.sku}</Badge>
+              {row.original.isMachine ? <Badge variant="success">Machine</Badge> : null}
               {row.original.brand ? <span className="text-xs text-muted-foreground">{row.original.brand}</span> : null}
               {row.original.category ? <span className="text-xs text-muted-foreground">/ {row.original.category}</span> : null}
             </div>
