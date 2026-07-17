@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, IndianRupee, Loader2, Minus, Pencil, Plus, ReceiptText, Trash2, TrendingUp, WandSparkles, X } from "lucide-react";
 import { toast } from "sonner";
@@ -71,6 +71,189 @@ function formatLogTime(value: string) {
 
 function saleItemCount(sale: SaleRecord) {
   return sale.lines.reduce((total, line) => total + line.quantity, 0);
+}
+
+function startOfToday() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+
+  return date;
+}
+
+function startOfWeek() {
+  const date = startOfToday();
+  const day = date.getDay();
+  const distanceFromMonday = day === 0 ? 6 : day - 1;
+  date.setDate(date.getDate() - distanceFromMonday);
+
+  return date;
+}
+
+function startOfMonth() {
+  const date = startOfToday();
+  date.setDate(1);
+
+  return date;
+}
+
+function calculateVisibleMetrics(sales: SaleRecord[]): SalesMetrics {
+  const today = startOfToday().getTime();
+  const week = startOfWeek().getTime();
+  const month = startOfMonth().getTime();
+
+  return sales.reduce<SalesMetrics>(
+    (metrics, sale) => {
+      const saleTime = new Date(sale.saleDate).getTime();
+      const itemCount = saleItemCount(sale);
+
+      if (saleTime >= today) {
+        metrics.todayRevenue += sale.subtotal;
+        metrics.todayProfit += sale.grossProfit;
+        metrics.todayItems += itemCount;
+      }
+
+      if (saleTime >= week) {
+        metrics.weekRevenue += sale.subtotal;
+        metrics.weekProfit += sale.grossProfit;
+      }
+
+      if (saleTime >= month) {
+        metrics.monthRevenue += sale.subtotal;
+        metrics.monthProfit += sale.grossProfit;
+      }
+
+      return metrics;
+    },
+    {
+      todayRevenue: 0,
+      todayProfit: 0,
+      todayItems: 0,
+      weekRevenue: 0,
+      weekProfit: 0,
+      monthRevenue: 0,
+      monthProfit: 0
+    }
+  );
+}
+
+function sortSales(sales: SaleRecord[]) {
+  return [...sales].sort((a, b) => {
+    const saleDateDistance = new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime();
+
+    if (saleDateDistance !== 0) {
+      return saleDateDistance;
+    }
+
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
+function draftToSaleRecord({
+  saleId,
+  saleDate,
+  paymentMode,
+  note,
+  lines
+}: {
+  saleId: string;
+  saleDate: string;
+  paymentMode: SaleRecord["paymentMode"];
+  note: string;
+  lines: DraftLine[];
+}): SaleRecord {
+  const timestamp = new Date().toISOString();
+  const parsedSaleDate = new Date(`${saleDate || todayInputValue()}T12:00:00`);
+  const saleLines = lines.map((line) => {
+    const lineTotal = line.quantity * line.unitPrice;
+    const lineProfit = line.quantity * (line.unitPrice - line.unitCost);
+
+    return {
+      id: `optimistic-line-${crypto.randomUUID()}`,
+      saleId,
+      productId: line.productId,
+      productTitle: line.productTitle,
+      productSku: line.productSku,
+      quantity: line.quantity,
+      unitPrice: line.unitPrice,
+      unitCost: line.unitCost,
+      lineTotal,
+      lineProfit,
+      createdAt: timestamp
+    };
+  });
+  const subtotal = saleLines.reduce((total, line) => total + line.lineTotal, 0);
+  const totalCost = saleLines.reduce((total, line) => total + line.unitCost * line.quantity, 0);
+
+  return {
+    id: saleId,
+    saleDate: Number.isNaN(parsedSaleDate.getTime()) ? timestamp : parsedSaleDate.toISOString(),
+    paymentMode,
+    subtotal,
+    totalCost,
+    grossProfit: subtotal - totalCost,
+    note: note.trim() || null,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    lines: saleLines
+  };
+}
+
+function applySaleStockChange(products: ProductRecord[], restoreSale: SaleRecord | null, subtractSale: SaleRecord | null) {
+  const quantityChanges = new Map<string, number>();
+
+  for (const line of restoreSale?.lines ?? []) {
+    if (line.productId) {
+      quantityChanges.set(line.productId, (quantityChanges.get(line.productId) ?? 0) + line.quantity);
+    }
+  }
+
+  for (const line of subtractSale?.lines ?? []) {
+    if (line.productId) {
+      quantityChanges.set(line.productId, (quantityChanges.get(line.productId) ?? 0) - line.quantity);
+    }
+  }
+
+  if (!quantityChanges.size) {
+    return products;
+  }
+
+  return products.map((product) => {
+    const change = quantityChanges.get(product.id) ?? 0;
+
+    if (!change) {
+      return product;
+    }
+
+    return {
+      ...product,
+      quantity: Math.max(0, product.quantity + change)
+    };
+  });
+}
+
+function stockValidationMessage(lines: DraftLine[], products: ProductRecord[]) {
+  const productMap = new Map(products.map((product) => [product.id, product]));
+  const requestedQuantityByProduct = new Map<string, number>();
+
+  for (const line of lines) {
+    const product = productMap.get(line.productId);
+
+    if (!product) {
+      return `${line.productTitle} is no longer available in inventory.`;
+    }
+
+    requestedQuantityByProduct.set(line.productId, (requestedQuantityByProduct.get(line.productId) ?? 0) + line.quantity);
+  }
+
+  for (const [productId, requestedQuantity] of requestedQuantityByProduct) {
+    const product = productMap.get(productId);
+
+    if (!product || product.quantity < requestedQuantity) {
+      return `${product?.title ?? "Product"} only has ${product?.quantity ?? 0} in stock.`;
+    }
+  }
+
+  return null;
 }
 
 function normalizeSearch(value: string) {
@@ -234,13 +417,15 @@ function SalesLogCard({
   showMargin,
   onEdit,
   onDelete,
-  isDeleting
+  isDeleting,
+  isSyncing
 }: {
   sale: SaleRecord;
   showMargin: boolean;
   onEdit: (sale: SaleRecord) => void;
   onDelete: (sale: SaleRecord) => void;
   isDeleting: boolean;
+  isSyncing: boolean;
 }) {
   return (
     <article className="grid gap-3 border-b bg-background px-3 py-3 last:border-0 sm:px-4">
@@ -250,6 +435,7 @@ function SalesLogCard({
           <div className="mt-1 flex flex-wrap gap-1.5">
             <Badge variant="secondary">{sale.paymentMode}</Badge>
             <Badge variant="outline">{saleItemCount(sale)} items</Badge>
+            {isSyncing ? <Badge variant="outline">Syncing</Badge> : null}
           </div>
         </div>
         <div className="flex items-start gap-2">
@@ -304,6 +490,8 @@ export function SalesManager({
 }) {
   const router = useRouter();
   const bulkTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [visibleProducts, setVisibleProducts] = useState(products);
+  const [visibleSales, setVisibleSales] = useState(sales);
   const [query, setQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<ProductRecord | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -316,10 +504,20 @@ export function SalesManager({
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
   const [deletingSaleId, setDeletingSaleId] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [syncingSaleIds, setSyncingSaleIds] = useState<string[]>([]);
+  const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    setVisibleProducts(products);
+  }, [products]);
+
+  useEffect(() => {
+    setVisibleSales(sales);
+  }, [sales]);
 
   const subtotal = lines.reduce((total, line) => total + line.quantity * line.unitPrice, 0);
   const profit = lines.reduce((total, line) => total + line.quantity * (line.unitPrice - line.unitCost), 0);
+  const visibleMetrics = useMemo(() => calculateVisibleMetrics(visibleSales), [visibleSales]);
   const draftStockByProduct = useMemo(() => {
     return lines.reduce((stocks, line) => {
       stocks.set(line.productId, Math.max(stocks.get(line.productId) ?? 0, line.stock));
@@ -328,10 +526,10 @@ export function SalesManager({
   }, [lines]);
   const productsForDraft = useMemo(
     () =>
-      products.map((product) =>
+      visibleProducts.map((product) =>
         draftStockByProduct.has(product.id) ? { ...product, quantity: draftStockByProduct.get(product.id)! } : product
       ),
-    [draftStockByProduct, products]
+    [draftStockByProduct, visibleProducts]
   );
   const selectedProductReservedQuantity = selectedProduct
     ? lines
@@ -383,7 +581,7 @@ export function SalesManager({
 
       return groups;
     }, []);
-  }, [sales]);
+  }, [visibleSales]);
 
   const pickProduct = (product: ProductRecord) => {
     setSelectedProduct(product);
@@ -526,8 +724,16 @@ export function SalesManager({
     setEditingSaleId(null);
   };
 
+  const markSaleSyncing = (saleId: string) => {
+    setSyncingSaleIds((current) => (current.includes(saleId) ? current : [...current, saleId]));
+  };
+
+  const unmarkSaleSyncing = (saleId: string) => {
+    setSyncingSaleIds((current) => current.filter((id) => id !== saleId));
+  };
+
   const startEditSale = (sale: SaleRecord) => {
-    const productMap = new Map(products.map((product) => [product.id, product]));
+    const productMap = new Map(visibleProducts.map((product) => [product.id, product]));
     const originalQuantityByProduct = sale.lines.reduce((quantities, line) => {
       if (line.productId) {
         quantities.set(line.productId, (quantities.get(line.productId) ?? 0) + line.quantity);
@@ -584,22 +790,26 @@ export function SalesManager({
     }
 
     setDeletingSaleId(sale.id);
+    setVisibleSales((current) => current.filter((item) => item.id !== sale.id));
+    setVisibleProducts((current) => applySaleStockChange(current, sale, null));
+
+    if (editingSaleId === sale.id) {
+      resetSaleForm();
+    }
+
     startTransition(async () => {
       const result = await deleteSaleAction(sale.id);
 
       setDeletingSaleId(null);
 
       if (!result.ok) {
+        setVisibleSales((current) => sortSales([sale, ...current.filter((item) => item.id !== sale.id)]));
+        setVisibleProducts((current) => applySaleStockChange(current, null, sale));
         toast.error(result.message);
         return;
       }
 
       toast.success(result.message);
-
-      if (editingSaleId === sale.id) {
-        resetSaleForm();
-      }
-
       router.refresh();
     });
   };
@@ -610,17 +820,45 @@ export function SalesManager({
       return;
     }
 
+    const stockError = stockValidationMessage(lines, productsForDraft);
+
+    if (stockError) {
+      toast.error(stockError);
+      return;
+    }
+
+    const previousSale = editingSaleId ? visibleSales.find((sale) => sale.id === editingSaleId) ?? null : null;
+    const optimisticSale = draftToSaleRecord({
+      saleId: editingSaleId ?? `optimistic-sale-${crypto.randomUUID()}`,
+      saleDate,
+      paymentMode,
+      note,
+      lines
+    });
+    const payload = {
+      saleDate,
+      paymentMode,
+      note,
+      lines: lines.map((line) => ({
+        productId: line.productId,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice
+      }))
+    };
+
+    setVisibleSales((current) =>
+      sortSales(
+        editingSaleId
+          ? current.map((sale) => (sale.id === editingSaleId ? optimisticSale : sale))
+          : [optimisticSale, ...current]
+      )
+    );
+    setVisibleProducts((current) => applySaleStockChange(current, previousSale, optimisticSale));
+    markSaleSyncing(optimisticSale.id);
+    resetSaleForm();
+    toast.success(editingSaleId ? "Sale updated on screen. Syncing..." : "Sale added on screen. Syncing...");
+
     startTransition(async () => {
-      const payload = {
-        saleDate,
-        paymentMode,
-        note,
-        lines: lines.map((line) => ({
-          productId: line.productId,
-          quantity: line.quantity,
-          unitPrice: line.unitPrice
-        }))
-      };
       const result = editingSaleId
         ? await updateSaleAction({
             saleId: editingSaleId,
@@ -629,12 +867,40 @@ export function SalesManager({
         : await createSaleAction(payload);
 
       if (!result.ok) {
+        setVisibleSales((current) => {
+          if (editingSaleId && previousSale) {
+            return sortSales(current.map((sale) => (sale.id === optimisticSale.id ? previousSale : sale)));
+          }
+
+          return current.filter((sale) => sale.id !== optimisticSale.id);
+        });
+        setVisibleProducts((current) => applySaleStockChange(current, optimisticSale, previousSale));
+        unmarkSaleSyncing(optimisticSale.id);
         toast.error(result.message);
         return;
       }
 
+      const persistedSaleId = result.data?.id;
+
+      if (!editingSaleId && persistedSaleId) {
+        setVisibleSales((current) =>
+          current.map((sale) =>
+            sale.id === optimisticSale.id
+              ? {
+                  ...sale,
+                  id: persistedSaleId,
+                  lines: sale.lines.map((line) => ({
+                    ...line,
+                    saleId: persistedSaleId
+                  }))
+                }
+              : sale
+          )
+        );
+      }
+
+      unmarkSaleSyncing(optimisticSale.id);
       toast.success(result.message);
-      resetSaleForm();
       router.refresh();
     });
   };
@@ -642,12 +908,12 @@ export function SalesManager({
   return (
     <div className="grid gap-4">
       <div className={cn("grid gap-2", displaySettings.showMargin ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-2 xl:grid-cols-3")}>
-        <StatCard title="Today" value={formatCurrency(metrics.todayRevenue)} icon={IndianRupee} tone="green" compact />
-        <StatCard title="Items" value={String(metrics.todayItems)} icon={ReceiptText} tone="blue" compact />
+        <StatCard title="Today" value={formatCurrency(visibleMetrics.todayRevenue)} icon={IndianRupee} tone="green" compact />
+        <StatCard title="Items" value={String(visibleMetrics.todayItems)} icon={ReceiptText} tone="blue" compact />
         {displaySettings.showMargin ? (
-          <StatCard title="Profit" value={formatCurrency(metrics.todayProfit)} icon={TrendingUp} tone="orange" compact />
+          <StatCard title="Profit" value={formatCurrency(visibleMetrics.todayProfit)} icon={TrendingUp} tone="orange" compact />
         ) : null}
-        <StatCard title="Month" value={formatCurrency(metrics.monthRevenue)} icon={CalendarDays} tone="neutral" compact />
+        <StatCard title="Month" value={formatCurrency(visibleMetrics.monthRevenue)} icon={CalendarDays} tone="neutral" compact />
       </div>
 
       <Card>
@@ -885,8 +1151,8 @@ export function SalesManager({
               <p className="text-xl font-semibold">{formatCurrency(subtotal)}</p>
               {displaySettings.showMargin ? <p className="text-xs text-emerald-600">Profit {formatCurrency(profit)}</p> : null}
             </div>
-            <Button type="button" onClick={saveSale} disabled={isPending || !lines.length}>
-              {isPending ? <Loader2 className="animate-spin" /> : <ReceiptText />}
+            <Button type="button" onClick={saveSale} disabled={!lines.length}>
+              <ReceiptText />
               {editingSaleId ? "Update Sale" : "Save Sale"}
             </Button>
           </div>
@@ -906,7 +1172,7 @@ export function SalesManager({
                 <div>
                   <h3 className="text-sm font-semibold">{group.key}</h3>
                   <p className="text-xs text-muted-foreground">
-                    {group.sales.length} logs · {group.items} items
+                    {group.sales.length} logs - {group.items} items
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
@@ -923,6 +1189,7 @@ export function SalesManager({
                     onEdit={startEditSale}
                     onDelete={deleteSale}
                     isDeleting={deletingSaleId === sale.id}
+                    isSyncing={syncingSaleIds.includes(sale.id)}
                   />
                 ))}
               </div>

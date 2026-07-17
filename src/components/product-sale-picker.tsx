@@ -62,12 +62,17 @@ export function ProductSalePicker({
               <button
                 key={product.id}
                 type="button"
+                disabled={product.quantity <= 0}
                 className={cn(
-                  "grid w-full grid-cols-[1fr_auto] gap-2 rounded-sm px-2 py-2 text-left outline-none hover:bg-muted",
-                  product.quantity <= 0 && "text-muted-foreground"
+                  "grid w-full grid-cols-[1fr_auto] gap-2 rounded-sm px-2 py-2 text-left outline-none hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55",
+                  product.quantity <= 0 && "text-muted-foreground hover:bg-transparent"
                 )}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
+                  if (product.quantity <= 0) {
+                    return;
+                  }
+
                   onSelect(product);
                   setOpen(false);
                 }}
@@ -78,7 +83,9 @@ export function ProductSalePicker({
                 </span>
                 <span className="text-right text-xs">
                   <span className="block font-medium">{formatCurrency(product.sellingPrice)}</span>
-                  <span className="text-muted-foreground">Qty {product.quantity}</span>
+                  <span className={cn("text-muted-foreground", product.quantity <= 0 && "text-red-600")}>
+                    {product.quantity > 0 ? `Qty ${product.quantity}` : "Out"}
+                  </span>
                 </span>
               </button>
             ))
