@@ -80,6 +80,7 @@ export type RentalRecord = {
   customerPhone: string | null;
   deposit: number;
   dailyRent: number;
+  paymentMode: "CASH" | "UPI";
   startedAt: string;
   closedAt: string | null;
   calendarDays: number | null;

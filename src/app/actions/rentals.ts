@@ -82,6 +82,7 @@ export async function createRentalAction(input: CreateRentalInput): Promise<Acti
           customerPhone: cleanText(parsed.data.customerPhone),
           deposit: parsed.data.deposit,
           dailyRent: parsed.data.dailyRent,
+          paymentMode: parsed.data.paymentMode,
           note: cleanText(parsed.data.note),
           status: "OPEN"
         }
@@ -92,7 +93,7 @@ export async function createRentalAction(input: CreateRentalInput): Promise<Acti
           productId: product.id,
           type: "Rent Started",
           quantity: 1,
-          note: `${product.title} rented with ${formatCurrency(parsed.data.deposit)} deposit.`
+          note: `${product.title} rented with ${formatCurrency(parsed.data.deposit)} deposit by ${parsed.data.paymentMode}.`
         }
       });
 

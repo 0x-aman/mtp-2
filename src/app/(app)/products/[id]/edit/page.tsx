@@ -1,15 +1,30 @@
 import { notFound } from "next/navigation";
 
+import { MachineForm } from "@/components/machine-form";
 import { PageHeader } from "@/components/page-header";
 import { ProductForm } from "@/components/product-form";
-import { getNextSku, getProductById, getProductFormOptions } from "@/lib/inventory-data";
+import { getNextMachineSku, getNextSku, getProductById, getProductFormOptions } from "@/lib/inventory-data";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [product, nextSku, formOptions] = await Promise.all([getProductById(id), getNextSku(), getProductFormOptions()]);
+  const [product, nextSku, nextMachineSku, formOptions] = await Promise.all([
+    getProductById(id),
+    getNextSku(),
+    getNextMachineSku(),
+    getProductFormOptions()
+  ]);
 
   if (!product) {
     notFound();
+  }
+
+  if (product.isMachine) {
+    return (
+      <>
+        <PageHeader title="Edit Machine" description="Update machine quantity and rent defaults." />
+        <MachineForm machine={product} defaultSku={nextMachineSku} />
+      </>
+    );
   }
 
   return (

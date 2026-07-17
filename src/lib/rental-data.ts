@@ -43,6 +43,7 @@ function rentalRecord(rental: {
   customerPhone: string | null;
   deposit: unknown;
   dailyRent: unknown;
+  paymentMode: string;
   startedAt: Date;
   closedAt: Date | null;
   calendarDays: number | null;
@@ -62,6 +63,7 @@ function rentalRecord(rental: {
     customerPhone: rental.customerPhone,
     deposit: Number(rental.deposit),
     dailyRent: Number(rental.dailyRent),
+    paymentMode: rental.paymentMode === "UPI" ? "UPI" : "CASH",
     startedAt: rental.startedAt.toISOString(),
     closedAt: rental.closedAt?.toISOString() ?? null,
     calendarDays: rental.calendarDays,

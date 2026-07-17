@@ -20,7 +20,7 @@ export default async function RentPage() {
         actions={
           <>
             <Button asChild>
-              <Link href="/products/new">
+              <Link href="/machines/new">
                 <Plus />
                 New Machine
               </Link>

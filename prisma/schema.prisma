@@ -60,6 +60,7 @@ model Rental {
   customerPhone  String?
   deposit        Decimal  @db.Decimal(12, 2)
   dailyRent      Decimal  @db.Decimal(12, 2)
+  paymentMode    String   @default("CASH")
   startedAt      DateTime @default(now())
   closedAt       DateTime?
   calendarDays   Int?

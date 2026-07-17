@@ -97,10 +97,12 @@ export function calculateMetrics(products: ProductRecord[]): DashboardMetrics {
 }
 
 function fallbackDataset(error?: unknown): InventoryDataset {
+  const products = demoProducts.filter((product) => !product.isMachine);
+
   return {
-    products: demoProducts,
+    products,
     activity: demoActivity,
-    metrics: calculateMetrics(demoProducts),
+    metrics: calculateMetrics(products),
     databaseReady: false,
     error: error instanceof Error ? error.message : "Database is not configured yet."
   };
@@ -144,6 +146,9 @@ export async function getInventoryDataset(): Promise<InventoryDataset> {
   try {
     const [products, activity] = await Promise.all([
       prisma.product.findMany({
+        where: {
+          isMachine: false
+        },
         orderBy: [{ updatedAt: "desc" }, { title: "asc" }]
       }),
       prisma.inventoryLog.findMany({
@@ -183,12 +188,15 @@ export async function getProducts() {
 export async function getProductFormOptions(): Promise<ProductFormOptions> {
   try {
     const products = await prisma.product.findMany({
+      where: {
+        isMachine: false
+      },
       orderBy: [{ title: "asc" }, { sku: "asc" }]
     });
 
     return buildFormOptions(products.map(productToRecord));
   } catch {
-    return buildFormOptions(demoProducts);
+    return buildFormOptions(demoProducts.filter((product) => !product.isMachine));
   }
 }
 
@@ -229,5 +237,31 @@ export async function getNextSku() {
     return `MPT-${String(nextNumber).padStart(4, "0")}`;
   } catch {
     return "MPT-0001";
+  }
+}
+
+export async function getNextMachineSku() {
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        sku: {
+          startsWith: "MCH-"
+        }
+      },
+      select: {
+        sku: true
+      }
+    });
+
+    const nextNumber =
+      products.reduce((max, product) => {
+        const number = Number(product.sku.replace("MCH-", ""));
+
+        return Number.isFinite(number) ? Math.max(max, number) : max;
+      }, 0) + 1;
+
+    return `MCH-${String(nextNumber).padStart(4, "0")}`;
+  } catch {
+    return "MCH-0001";
   }
 }

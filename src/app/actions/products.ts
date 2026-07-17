@@ -9,9 +9,16 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import type { ActionResult, ProductRecord } from "@/lib/types";
 import { calculateMarginPercent } from "@/lib/utils";
-import { bulkStockSchema, csvProductSchema, productSchema, type ProductInput } from "@/lib/validation";
+import {
+  bulkStockSchema,
+  csvProductSchema,
+  machineSchema,
+  productSchema,
+  type MachineInput,
+  type ProductInput
+} from "@/lib/validation";
 
-const revalidatedPaths = ["/", "/products", "/analytics", "/import/csv", "/import/ocr"];
+const revalidatedPaths = ["/", "/products", "/rent", "/analytics", "/import/csv", "/import/ocr"];
 
 function revalidateInventory() {
   for (const route of revalidatedPaths) {
@@ -52,11 +59,29 @@ function cleanInput(input: ProductInput) {
   };
 }
 
-async function nextSkuInTransaction(tx: Prisma.TransactionClient) {
+function cleanMachineInput(input: MachineInput) {
+  return {
+    title: input.title,
+    brand: input.brand || null,
+    category: input.category || null,
+    description: input.description || null,
+    costPrice: 0,
+    sellingPrice: 0,
+    marginPercent: 0,
+    quantity: input.quantity,
+    reorderLevel: 0,
+    isMachine: true,
+    defaultRentDeposit: input.defaultRentDeposit,
+    defaultDailyRent: input.defaultDailyRent,
+    imageUrl: input.imageUrl || null
+  };
+}
+
+async function nextSkuInTransaction(tx: Prisma.TransactionClient, prefix = "MPT") {
   const products = await tx.product.findMany({
     where: {
       sku: {
-        startsWith: "MPT-"
+        startsWith: `${prefix}-`
       }
     },
     select: {
@@ -66,12 +91,12 @@ async function nextSkuInTransaction(tx: Prisma.TransactionClient) {
 
   const nextNumber =
     products.reduce((max, product) => {
-      const value = Number(product.sku.replace("MPT-", ""));
+      const value = Number(product.sku.replace(`${prefix}-`, ""));
 
       return Number.isFinite(value) ? Math.max(max, value) : max;
     }, 0) + 1;
 
-  return `MPT-${String(nextNumber).padStart(4, "0")}`;
+  return `${prefix}-${String(nextNumber).padStart(4, "0")}`;
 }
 
 function productRecord(product: {
@@ -192,6 +217,93 @@ export async function updateProductAction(id: string, input: ProductInput): Prom
     return {
       ok: true,
       message: "Product updated."
+    };
+  } catch (error) {
+    return databaseError(error);
+  }
+}
+
+export async function createMachineAction(input: MachineInput): Promise<ActionResult<{ id: string }>> {
+  const parsed = machineSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "Check the highlighted machine fields.",
+      fieldErrors: parsed.error.flatten().fieldErrors
+    };
+  }
+
+  try {
+    const machine = await prisma.$transaction(async (tx) => {
+      const created = await tx.product.create({
+        data: {
+          ...cleanMachineInput(parsed.data),
+          sku: await nextSkuInTransaction(tx, "MCH")
+        }
+      });
+
+      await tx.inventoryLog.create({
+        data: {
+          productId: created.id,
+          type: "Machine Created",
+          quantity: created.quantity,
+          note: `${created.title} added as a rentable machine.`
+        }
+      });
+
+      return created;
+    });
+
+    revalidateInventory();
+
+    return {
+      ok: true,
+      message: "Machine created.",
+      data: {
+        id: machine.id
+      }
+    };
+  } catch (error) {
+    return databaseError(error);
+  }
+}
+
+export async function updateMachineAction(id: string, input: MachineInput): Promise<ActionResult> {
+  const parsed = machineSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "Check the highlighted machine fields.",
+      fieldErrors: parsed.error.flatten().fieldErrors
+    };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.product.update({
+        where: {
+          id
+        },
+        data: cleanMachineInput(parsed.data)
+      });
+
+      await tx.inventoryLog.create({
+        data: {
+          productId: updated.id,
+          type: "Machine Updated",
+          quantity: updated.quantity,
+          note: `${updated.title} machine details were updated.`
+        }
+      });
+    });
+
+    revalidateInventory();
+
+    return {
+      ok: true,
+      message: "Machine updated."
     };
   } catch (error) {
     return databaseError(error);
@@ -455,7 +567,7 @@ export async function uploadProductImageAction(formData: FormData): Promise<Acti
 }
 
 export async function duplicateProductAction(product: ProductRecord): Promise<ActionResult<{ id: string }>> {
-  const nextSku = await prisma.$transaction((tx) => nextSkuInTransaction(tx));
+  const nextSku = await prisma.$transaction((tx) => nextSkuInTransaction(tx, product.isMachine ? "MCH" : "MPT"));
 
   return createProductAction({
     title: `${product.title} Copy`,

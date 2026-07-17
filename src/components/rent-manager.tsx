@@ -56,6 +56,7 @@ type RentalFormState = {
   customerPhone: string;
   deposit: string;
   dailyRent: string;
+  paymentMode: "CASH" | "UPI";
   note: string;
 };
 
@@ -66,6 +67,7 @@ function defaultForm(machine?: RentableMachineRecord | null): RentalFormState {
     customerPhone: "",
     deposit: String(machine?.defaultRentDeposit ?? 0),
     dailyRent: String(machine?.defaultDailyRent ?? 0),
+    paymentMode: "CASH",
     note: ""
   };
 }
@@ -78,6 +80,10 @@ function machineMatchesSearch(machine: RentableMachineRecord, search: string) {
 
 function customerLabel(rental: RentalRecord) {
   return [rental.customerName, rental.customerPhone].filter(Boolean).join(" / ") || "Walk-in";
+}
+
+function paymentModeLabel(mode: RentalRecord["paymentMode"] | RentalFormState["paymentMode"]) {
+  return mode === "UPI" ? "UPI" : "Cash";
 }
 
 function currentRentalTotals(rental: RentalRecord) {
@@ -193,6 +199,7 @@ function OpenRentalRow({
       </TableCell>
       <TableCell>{customerLabel(rental)}</TableCell>
       <TableCell>{formatDateTime(rental.startedAt)}</TableCell>
+      <TableCell>{paymentModeLabel(rental.paymentMode)}</TableCell>
       <TableCell>{formatCurrency(rental.dailyRent)}</TableCell>
       <TableCell>{formatCurrency(rental.deposit)}</TableCell>
       <TableCell className="font-medium">{formatCurrency(totals.rent)}</TableCell>
@@ -225,6 +232,7 @@ function ClosedRentalRow({ rental }: { rental: RentalRecord }) {
       <TableCell>{customerLabel(rental)}</TableCell>
       <TableCell>{formatDateTime(rental.startedAt)}</TableCell>
       <TableCell>{rental.closedAt ? formatDateTime(rental.closedAt) : "-"}</TableCell>
+      <TableCell>{paymentModeLabel(rental.paymentMode)}</TableCell>
       <TableCell>{rental.calendarDays ?? 0}</TableCell>
       <TableCell>{formatCurrency(rental.rentTotal ?? 0)}</TableCell>
       <TableCell>
@@ -297,6 +305,7 @@ export function RentManager({
         customerPhone: formState.customerPhone,
         deposit: Number(formState.deposit),
         dailyRent: Number(formState.dailyRent),
+        paymentMode: formState.paymentMode,
         note: formState.note
       });
 
@@ -387,6 +396,7 @@ export function RentManager({
                       <TableHead>Machine</TableHead>
                       <TableHead>Customer</TableHead>
                       <TableHead>Started</TableHead>
+                      <TableHead>Payment</TableHead>
                       <TableHead>Daily</TableHead>
                       <TableHead>Deposit</TableHead>
                       <TableHead>Rent</TableHead>
@@ -424,6 +434,7 @@ export function RentManager({
                       <TableHead>Customer</TableHead>
                       <TableHead>Started</TableHead>
                       <TableHead>Closed</TableHead>
+                      <TableHead>Payment</TableHead>
                       <TableHead>Days</TableHead>
                       <TableHead>Rent</TableHead>
                       <TableHead>Balance</TableHead>
@@ -537,6 +548,23 @@ export function RentManager({
                   onChange={(event) => updateForm("dailyRent", event.target.value)}
                 />
                 {fieldErrors.dailyRent?.[0] ? <p className="text-xs text-red-600">{fieldErrors.dailyRent[0]}</p> : null}
+              </div>
+
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="paymentMode">Payment Mode</Label>
+                <Select
+                  value={formState.paymentMode}
+                  onValueChange={(value) => updateForm("paymentMode", value as RentalFormState["paymentMode"])}
+                >
+                  <SelectTrigger id="paymentMode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CASH">Cash</SelectItem>
+                    <SelectItem value="UPI">UPI</SelectItem>
+                  </SelectContent>
+                </Select>
+                {fieldErrors.paymentMode?.[0] ? <p className="text-xs text-red-600">{fieldErrors.paymentMode[0]}</p> : null}
               </div>
             </div>
 

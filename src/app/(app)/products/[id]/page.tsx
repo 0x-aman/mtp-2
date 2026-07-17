@@ -23,18 +23,20 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const inventoryValue = product.costPrice * product.quantity;
   const revenue = product.sellingPrice * product.quantity;
   const profit = revenue - inventoryValue;
+  const backHref = product.isMachine ? "/rent" : "/";
+  const backLabel = product.isMachine ? "Rent" : "Inventory";
 
   return (
     <>
       <PageHeader
         title={product.title}
-        description={`${product.sku} · ${product.brand ?? "Unbranded"} · ${product.category ?? "Uncategorized"}`}
+        description={`${product.sku} / ${product.brand ?? "Unbranded"} / ${product.category ?? "Uncategorized"}`}
         actions={
           <>
             <Button asChild variant="outline">
-              <Link href="/">
+              <Link href={backHref}>
                 <ArrowLeft />
-                Inventory
+                {backLabel}
               </Link>
             </Button>
             <Button asChild>
@@ -64,14 +66,18 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <Badge variant="outline">{product.sku}</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Rent</span>
+                <span className="text-muted-foreground">Type</span>
                 <Badge variant={product.isMachine ? "success" : "secondary"}>
-                  {product.isMachine ? "Machine" : "Not rentable"}
+                  {product.isMachine ? "Rentable machine" : "Sellable product"}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Stock Status</span>
-                <StockBadge quantity={product.quantity} reorderLevel={product.reorderLevel} />
+                <span className="text-muted-foreground">{product.isMachine ? "Quantity" : "Stock Status"}</span>
+                {product.isMachine ? (
+                  <span className="font-medium">{product.quantity}</span>
+                ) : (
+                  <StockBadge quantity={product.quantity} reorderLevel={product.reorderLevel} />
+                )}
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Updated</span>
@@ -81,25 +87,31 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           </CardContent>
         </Card>
 
-        <div className="grid gap-6 content-start">
+        <div className="grid content-start gap-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard title="Quantity" value={String(product.quantity)} icon={Package} tone="blue" />
-            <StatCard title="Inventory Value" value={formatCurrency(inventoryValue)} icon={WalletCards} tone="orange" />
-            <StatCard title="Potential Revenue" value={formatCurrency(revenue)} icon={TrendingUp} tone="green" />
-            <StatCard title="Expected Profit" value={formatCurrency(profit)} icon={IndianRupee} tone="blue" />
             {product.isMachine ? (
-              <StatCard
-                title="Daily Rent"
-                value={formatCurrency(product.defaultDailyRent ?? 0)}
-                icon={Clock}
-                tone="green"
-              />
-            ) : null}
+              <>
+                <StatCard title="Daily Rent" value={formatCurrency(product.defaultDailyRent ?? 0)} icon={Clock} tone="green" />
+                <StatCard
+                  title="Default Deposit"
+                  value={formatCurrency(product.defaultRentDeposit ?? 0)}
+                  icon={IndianRupee}
+                  tone="orange"
+                />
+              </>
+            ) : (
+              <>
+                <StatCard title="Inventory Value" value={formatCurrency(inventoryValue)} icon={WalletCards} tone="orange" />
+                <StatCard title="Potential Revenue" value={formatCurrency(revenue)} icon={TrendingUp} tone="green" />
+                <StatCard title="Expected Profit" value={formatCurrency(profit)} icon={IndianRupee} tone="blue" />
+              </>
+            )}
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Product Information</CardTitle>
+              <CardTitle>{product.isMachine ? "Machine Information" : "Product Information"}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-5 md:grid-cols-2">
               <div>
@@ -109,18 +121,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <div>
                 <p className="text-sm text-muted-foreground">Category</p>
                 <p className="mt-1 font-medium">{product.category ?? "Uncategorized"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Cost Price</p>
-                <p className="mt-1 font-medium">{formatCurrency(product.costPrice)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Selling Price</p>
-                <p className="mt-1 font-medium">{formatCurrency(product.sellingPrice)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Margin</p>
-                <p className="mt-1 font-medium">{product.marginPercent}%</p>
               </div>
               {product.isMachine ? (
                 <>
@@ -133,7 +133,22 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     <p className="mt-1 font-medium">{formatCurrency(product.defaultDailyRent ?? 0)}</p>
                   </div>
                 </>
-              ) : null}
+              ) : (
+                <>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Cost Price</p>
+                    <p className="mt-1 font-medium">{formatCurrency(product.costPrice)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Selling Price</p>
+                    <p className="mt-1 font-medium">{formatCurrency(product.sellingPrice)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Margin</p>
+                    <p className="mt-1 font-medium">{product.marginPercent}%</p>
+                  </div>
+                </>
+              )}
               <div className="md:col-span-2">
                 <p className="text-sm text-muted-foreground">Description</p>
                 <p className="mt-1 whitespace-pre-wrap">{product.description || "No description added."}</p>

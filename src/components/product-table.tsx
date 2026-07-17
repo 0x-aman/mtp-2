@@ -134,6 +134,7 @@ function ProductMobileCard({
             <Badge variant="outline" className="max-w-full truncate">
               {product.sku}
             </Badge>
+            {product.isMachine ? <Badge variant="success">Rentable machine</Badge> : null}
             <StockBadge quantity={product.quantity} reorderLevel={product.reorderLevel} />
           </div>
           {meta ? <p className="mt-2 break-words text-xs text-muted-foreground">{meta}</p> : null}
@@ -265,7 +266,7 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
             </Link>
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <Badge variant="outline">{row.original.sku}</Badge>
-              {row.original.isMachine ? <Badge variant="success">Machine</Badge> : null}
+              {row.original.isMachine ? <Badge variant="success">Rentable machine</Badge> : null}
               {row.original.brand ? <span className="text-xs text-muted-foreground">{row.original.brand}</span> : null}
               {row.original.category ? <span className="text-xs text-muted-foreground">/ {row.original.category}</span> : null}
             </div>

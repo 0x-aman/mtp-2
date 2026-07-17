@@ -48,6 +48,22 @@ export const csvProductSchema = productSchema.omit({ sku: true }).extend({
   sku: z.string().trim().optional().nullable()
 });
 
+export const machineSchema = z.object({
+  title: z.string().trim().min(2, "Machine name is required"),
+  brand: z.string().trim().optional().nullable(),
+  category: z.string().trim().optional().nullable(),
+  description: z.string().trim().optional().nullable(),
+  quantity: z.coerce.number().int().min(0, "Quantity cannot be negative"),
+  defaultRentDeposit: money.default(0),
+  defaultDailyRent: money.default(0),
+  imageUrl: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .transform((value) => (value ? value : null))
+});
+
 export const bulkStockSchema = z.object({
   productIds: z.array(z.string()).min(1, "Select at least one product"),
   mode: z.enum(["add", "reduce", "set"]),
@@ -60,10 +76,12 @@ export const createRentalSchema = z.object({
   customerPhone: z.string().trim().optional().nullable(),
   deposit: money,
   dailyRent: money,
+  paymentMode: z.enum(["CASH", "UPI"]).default("CASH"),
   note: z.string().trim().optional().nullable()
 });
 
 export type ProductInput = z.infer<typeof productSchema>;
 export type CsvProductInput = z.infer<typeof csvProductSchema>;
 export type BulkStockInput = z.infer<typeof bulkStockSchema>;
+export type MachineInput = z.infer<typeof machineSchema>;
 export type CreateRentalInput = z.infer<typeof createRentalSchema>;
