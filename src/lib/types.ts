@@ -131,7 +131,7 @@ export type SaleRecord = {
   id: string;
   saleDate: string;
   customer: string | null;
-  paymentMode: "CASH" | "UPI" | "CARD" | "OTHER";
+  paymentMode: "CASH" | "UPI";
   subtotal: number;
   totalCost: number;
   grossProfit: number;

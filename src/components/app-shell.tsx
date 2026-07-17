@@ -35,8 +35,9 @@ const navItems = [
 const mobileNavItems = [
   { href: "/", label: "Inventory", icon: Boxes },
   { href: "/rent", label: "Rent", icon: Clock },
+  { href: "/sales", label: "Sales", icon: ReceiptText },
   { href: "/add", label: "Add", icon: PackagePlus },
-  { href: "/more", label: "More", icon: BarChart3 }
+  { href: "/settings", label: "Settings", icon: Settings }
 ];
 
 function isActivePath(pathname: string, href: string) {
@@ -54,6 +55,10 @@ function isActivePath(pathname: string, href: string) {
 
   if (href === "/more") {
     return pathname === "/more" || pathname.startsWith("/analytics") || pathname.startsWith("/settings") || pathname.startsWith("/sales") || pathname.startsWith("/bill");
+  }
+
+  if (href === "/settings" && (pathname.startsWith("/settings") || pathname.startsWith("/bill") || pathname === "/more")) {
+    return true;
   }
 
   if (href === "/import/csv" && pathname.startsWith("/import")) {
@@ -117,7 +122,7 @@ function MobileBottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-1.5 pb-[calc(0.35rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
-      <div className="grid grid-cols-4 gap-1">
+      <div className="grid grid-cols-5 gap-1">
         {mobileNavItems.map((item) => {
           const Icon = item.icon;
           const active = isActivePath(pathname, item.href);

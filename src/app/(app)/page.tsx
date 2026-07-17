@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Boxes, IndianRupee, Plus, Upload } from "lucide-react";
+import { AlertTriangle, Boxes, FileText, IndianRupee, Plus, ReceiptText, Upload } from "lucide-react";
 
 import { DatabaseBanner } from "@/components/database-banner";
 import { PageHeader } from "@/components/page-header";
@@ -59,6 +59,21 @@ export default async function DashboardPage() {
           tone={dataset.metrics.lowStockProducts ? "red" : "green"}
           compact
         />
+      </div>
+
+      <div className="mb-2 grid grid-cols-2 gap-2 sm:hidden">
+        <Button asChild size="sm">
+          <Link href="/sales">
+            <ReceiptText />
+            Sales Log
+          </Link>
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/bill">
+            <FileText />
+            Bill
+          </Link>
+        </Button>
       </div>
 
       <ProductTable products={dataset.products} databaseReady={dataset.databaseReady} displaySettings={dataset.displaySettings} />

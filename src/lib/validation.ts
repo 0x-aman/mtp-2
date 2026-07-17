@@ -89,7 +89,7 @@ export const saleLineSchema = z.object({
 export const createSaleSchema = z.object({
   saleDate: z.string().trim().optional().nullable(),
   customer: z.string().trim().optional().nullable(),
-  paymentMode: z.enum(["CASH", "UPI", "CARD", "OTHER"]).default("CASH"),
+  paymentMode: z.enum(["CASH", "UPI"]).default("CASH"),
   note: z.string().trim().optional().nullable(),
   lines: z.array(saleLineSchema).min(1, "Add at least one product")
 });
