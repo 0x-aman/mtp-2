@@ -29,12 +29,10 @@ const navItems = [
 ];
 
 const mobileNavItems = [
-  { href: "/", label: "Stock", icon: Boxes },
+  { href: "/", label: "Inventory", icon: Boxes },
   { href: "/rent", label: "Rent", icon: Clock },
-  { href: "/products/new", label: "Add", icon: PackagePlus },
-  { href: "/import/csv", label: "Import", icon: FileUp },
-  { href: "/analytics", label: "Charts", icon: BarChart3 },
-  { href: "/settings", label: "Settings", icon: Settings }
+  { href: "/add", label: "Add", icon: PackagePlus },
+  { href: "/more", label: "More", icon: BarChart3 }
 ];
 
 function isActivePath(pathname: string, href: string) {
@@ -42,8 +40,16 @@ function isActivePath(pathname: string, href: string) {
     return pathname === "/" || (pathname.startsWith("/products") && pathname !== "/products/new");
   }
 
-  if (href === "/rent" && pathname.startsWith("/machines")) {
+  if (href === "/rent" && pathname.startsWith("/machines") && pathname !== "/machines/new") {
     return true;
+  }
+
+  if (href === "/add") {
+    return pathname === "/add" || pathname === "/products/new" || pathname.startsWith("/machines") || pathname.startsWith("/import");
+  }
+
+  if (href === "/more") {
+    return pathname === "/more" || pathname.startsWith("/analytics") || pathname.startsWith("/settings");
   }
 
   if (href === "/import/csv" && pathname.startsWith("/import")) {
@@ -107,7 +113,7 @@ function MobileBottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-1.5 pb-[calc(0.35rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
-      <div className="grid grid-cols-6 gap-1">
+      <div className="grid grid-cols-4 gap-1">
         {mobileNavItems.map((item) => {
           const Icon = item.icon;
           const active = isActivePath(pathname, item.href);
