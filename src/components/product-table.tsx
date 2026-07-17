@@ -117,14 +117,14 @@ function ProductMobileCard({
   const meta = [product.brand, product.category].filter(Boolean).join(" / ");
 
   return (
-    <article className="rounded-lg border bg-card p-3">
-      <div className="flex min-w-0 gap-3">
+    <article className="rounded-lg border bg-card p-2.5">
+      <div className="flex min-w-0 gap-2.5">
         <ProductIcon
           title={product.title}
           brand={product.brand}
           category={product.category}
           href={`/products/${product.id}`}
-          className="size-14"
+          className="size-12"
         />
         <div className="min-w-0 flex-1">
           <Link href={`/products/${product.id}`} className="block break-words text-sm font-semibold leading-5 hover:text-primary">
@@ -141,7 +141,7 @@ function ProductMobileCard({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 rounded-md bg-muted/50 p-2 text-center">
+      <div className="mt-2.5 grid grid-cols-3 gap-1.5 rounded-md bg-muted/50 p-1.5 text-center">
         <div className="min-w-0">
           <p className="text-[11px] uppercase text-muted-foreground">Qty</p>
           <p className="truncate text-sm font-semibold">{product.quantity}</p>
@@ -156,7 +156,7 @@ function ProductMobileCard({
         </div>
       </div>
 
-      <div className="mt-3">
+      <div className="mt-2.5">
         <ProductActions product={product} onDelete={onDelete} compact />
       </div>
     </article>
@@ -444,8 +444,8 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
   }
 
   return (
-    <div className="grid min-w-0 gap-4">
-      <div className="grid min-w-0 gap-3 rounded-lg border bg-card p-3 sm:p-4 lg:grid-cols-[minmax(240px,1fr)_180px_180px_160px_auto]">
+    <div className="grid min-w-0 gap-3">
+      <div className="grid min-w-0 gap-2 rounded-lg border bg-card p-2.5 sm:p-3 lg:grid-cols-[minmax(240px,1fr)_180px_180px_160px_auto]">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -515,7 +515,7 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
         </div>
       ) : null}
 
-      <div className="grid gap-3 md:hidden">
+      <div className="grid gap-2.5 md:hidden">
         {pageRows.length ? (
           pageRows.map((row) => <ProductMobileCard key={row.id} product={row.original} onDelete={setDeleteTarget} />)
         ) : (

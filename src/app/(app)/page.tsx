@@ -35,7 +35,7 @@ export default async function DashboardPage() {
       />
       <DatabaseBanner ready={dataset.databaseReady} error={dataset.error} />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-3">
+      <div className="mb-3 grid gap-2 sm:mb-4 sm:grid-cols-3">
         <StatCard title="Products" value={formatNumber(dataset.metrics.totalProducts)} icon={Boxes} tone="blue" />
         <StatCard
           title="Stock Value"

@@ -110,17 +110,17 @@ function MachineCard({
   return (
     <article
       className={cn(
-        "grid gap-4 rounded-lg border bg-card p-4",
+        "grid gap-3 rounded-lg border bg-card p-3",
         !available && "border-red-200 bg-red-50/50 dark:border-red-950 dark:bg-red-950/20"
       )}
     >
-      <div className="flex min-w-0 gap-3">
+      <div className="flex min-w-0 gap-2.5">
         <ProductIcon
           title={machine.title}
           brand={machine.brand}
           category={machine.category}
           href={`/products/${machine.id}`}
-          className="size-14"
+          className="size-12"
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -131,7 +131,7 @@ function MachineCard({
               >
                 {machine.title}
               </Link>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
                 <Badge variant="outline">{machine.sku}</Badge>
                 <Badge variant={available ? "success" : "danger"}>
                   {available ? `${machine.availableForRent} available` : "Not available for rent"}
@@ -140,14 +140,14 @@ function MachineCard({
             </div>
           </div>
           {[machine.brand, machine.category].filter(Boolean).length ? (
-            <p className="mt-2 break-words text-xs text-muted-foreground">
+            <p className="mt-1.5 break-words text-xs text-muted-foreground">
               {[machine.brand, machine.category].filter(Boolean).join(" / ")}
             </p>
           ) : null}
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 rounded-md bg-muted/50 p-2 text-center">
+      <div className="grid grid-cols-3 gap-1.5 rounded-md bg-muted/50 p-1.5 text-center">
         <div className="min-w-0">
           <p className="text-[11px] uppercase text-muted-foreground">Total</p>
           <p className="truncate text-sm font-semibold">{machine.quantity}</p>
@@ -238,10 +238,10 @@ function OpenRentalMobileItem({
   const totals = currentRentalTotals(rental);
 
   return (
-    <article className="grid gap-3 border-b py-4 last:border-0">
+    <article className="grid gap-2.5 border-b py-3 last:border-0">
       <div className="min-w-0">
         <p className="break-words text-sm font-semibold">{rental.machineTitle}</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
           <Badge variant="outline">{rental.machineSku}</Badge>
           <Badge variant="warning">
             {totals.days} day{totals.days === 1 ? "" : "s"}
@@ -250,7 +250,7 @@ function OpenRentalMobileItem({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
         <MobileField label="Customer" value={customerLabel(rental)} />
         <MobileField label="Started" value={formatDateTime(rental.startedAt)} />
         <MobileField label="Daily" value={formatCurrency(rental.dailyRent)} />
@@ -297,16 +297,16 @@ function ClosedRentalMobileItem({ rental }: { rental: RentalRecord }) {
   const balance = rental.depositBalance ?? 0;
 
   return (
-    <article className="grid gap-3 border-b py-4 last:border-0">
+    <article className="grid gap-2.5 border-b py-3 last:border-0">
       <div className="min-w-0">
         <p className="break-words text-sm font-semibold">{rental.machineTitle}</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
           <Badge variant="outline">{rental.machineSku}</Badge>
           <Badge variant="secondary">{paymentModeLabel(rental.paymentMode)}</Badge>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
         <MobileField label="Customer" value={customerLabel(rental)} />
         <MobileField label="Days" value={rental.calendarDays ?? 0} />
         <MobileField label="Started" value={formatDateTime(rental.startedAt)} />
@@ -416,8 +416,8 @@ export function RentManager({
   };
 
   return (
-    <div className="grid gap-5">
-      <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+    <div className="grid gap-3">
+      <div className="flex flex-col gap-2 rounded-lg border bg-card p-2.5 sm:flex-row sm:items-center sm:justify-between sm:p-3">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -433,7 +433,7 @@ export function RentManager({
         </Button>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
         {filteredMachines.length ? (
           filteredMachines.map((machine) => <MachineCard key={machine.id} machine={machine} onStart={openCreateDialog} />)
         ) : (
@@ -444,7 +444,7 @@ export function RentManager({
       </div>
 
       <Tabs defaultValue="open">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto">
             <TabsTrigger value="open">
               <Clock className="mr-2 size-4" />
@@ -465,7 +465,7 @@ export function RentManager({
             <CardContent className="p-0">
               {openRentals.length ? (
                 <>
-                  <div className="grid px-4 md:hidden">
+                  <div className="grid px-3 md:hidden">
                     {openRentals.map((rental) => (
                       <OpenRentalMobileItem key={rental.id} rental={rental} onClose={setCloseTarget} />
                     ))}
@@ -511,7 +511,7 @@ export function RentManager({
             <CardContent className="p-0">
               {closedRentals.length ? (
                 <>
-                  <div className="grid px-4 md:hidden">
+                  <div className="grid px-3 md:hidden">
                     {closedRentals.map((rental) => (
                       <ClosedRentalMobileItem key={rental.id} rental={rental} />
                     ))}

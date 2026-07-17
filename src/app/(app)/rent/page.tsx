@@ -30,7 +30,7 @@ export default async function RentPage() {
       />
       <DatabaseBanner ready={dataset.databaseReady} error={dataset.error} />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-3 grid gap-2 sm:mb-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title="Machines" value={formatNumber(dataset.metrics.machineCount)} icon={Boxes} tone="blue" />
         <StatCard
           title="Available"

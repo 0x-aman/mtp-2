@@ -1,5 +1,6 @@
 export const SESSION_COOKIE = "mpt_session";
-export const SESSION_MAX_AGE_SECONDS = Number(process.env.SESSION_MAX_AGE_SECONDS ?? 60 * 30);
+export const DEFAULT_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
+export const SESSION_MAX_AGE_SECONDS = Number(process.env.SESSION_MAX_AGE_SECONDS ?? DEFAULT_SESSION_MAX_AGE_SECONDS);
 
 const encoder = new TextEncoder();
 

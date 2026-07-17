@@ -26,15 +26,15 @@ export function StatCard({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <span className={cn("flex size-9 items-center justify-center rounded-md", toneClasses[tone])}>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 p-3 pb-2 sm:p-4 sm:pb-2">
+        <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">{title}</CardTitle>
+        <span className={cn("flex size-8 items-center justify-center rounded-md", toneClasses[tone])}>
           <Icon className="size-4" />
         </span>
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold leading-none">{value}</div>
-        {caption ? <p className="mt-2 text-xs text-muted-foreground">{caption}</p> : null}
+      <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
+        <div className="text-xl font-semibold leading-none sm:text-2xl">{value}</div>
+        {caption ? <p className="mt-1.5 text-xs text-muted-foreground">{caption}</p> : null}
       </CardContent>
     </Card>
   );
