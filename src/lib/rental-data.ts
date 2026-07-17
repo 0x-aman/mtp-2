@@ -87,6 +87,12 @@ function calculateMetrics(machines: RentableMachineRecord[], rentals: RentalReco
   };
 }
 
+function sortedUnique(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean) as string[])).sort((a, b) =>
+    a.localeCompare(b)
+  );
+}
+
 function fallbackDataset(error?: unknown): RentalDataset {
   const machines = demoProducts.filter((product) => product.isMachine).map((product) =>
     machineRecord({
@@ -103,6 +109,33 @@ function fallbackDataset(error?: unknown): RentalDataset {
     databaseReady: false,
     error: error instanceof Error ? error.message : "Database is not configured yet."
   };
+}
+
+export async function getMachineFormOptions() {
+  try {
+    const machines = await prisma.product.findMany({
+      where: {
+        isMachine: true
+      },
+      select: {
+        brand: true,
+        category: true
+      },
+      orderBy: [{ brand: "asc" }, { category: "asc" }]
+    });
+
+    return {
+      brands: sortedUnique(machines.map((machine) => machine.brand)),
+      categories: sortedUnique(machines.map((machine) => machine.category))
+    };
+  } catch {
+    const machines = demoProducts.filter((product) => product.isMachine);
+
+    return {
+      brands: sortedUnique(machines.map((machine) => machine.brand)),
+      categories: sortedUnique(machines.map((machine) => machine.category))
+    };
+  }
 }
 
 export async function getRentalDataset(): Promise<RentalDataset> {

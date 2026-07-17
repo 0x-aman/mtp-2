@@ -11,6 +11,7 @@ import {
   createProductAction,
   updateProductAction
 } from "@/app/actions/products";
+import { OptionSelectInput } from "@/components/option-select-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -73,6 +74,8 @@ export function ProductForm({
 
   const costPrice = form.watch("costPrice");
   const sellingPrice = form.watch("sellingPrice");
+  const brand = form.watch("brand") ?? "";
+  const category = form.watch("category") ?? "";
   const margin = useMemo(
     () => calculateMarginPercent(Number(costPrice), Number(sellingPrice)),
     [costPrice, sellingPrice]
@@ -203,34 +206,25 @@ export function ProductForm({
               ) : null}
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="brand" className="flex items-center gap-1.5">
-                Brand <OptionalMark />
-              </Label>
-              <Input id="brand" list="product-brand-options" {...form.register("brand")} placeholder="Powerbilt" />
-              <datalist id="product-brand-options">
-                {formOptions.brands.map((brand) => (
-                  <option key={brand} value={brand} />
-                ))}
-              </datalist>
-            </div>
+            <OptionSelectInput
+              id="brand"
+              label="Brand"
+              value={brand}
+              options={formOptions.brands}
+              placeholder="Powerbilt"
+              optionalMark={<OptionalMark />}
+              onChange={(value) => form.setValue("brand", value, { shouldDirty: true })}
+            />
 
-            <div className="grid gap-2">
-              <Label htmlFor="category" className="flex items-center gap-1.5">
-                Category <OptionalMark />
-              </Label>
-              <Input
-                id="category"
-                list="product-category-options"
-                {...form.register("category")}
-                placeholder="Cutting Blades"
-              />
-              <datalist id="product-category-options">
-                {formOptions.categories.map((category) => (
-                  <option key={category} value={category} />
-                ))}
-              </datalist>
-            </div>
+            <OptionSelectInput
+              id="category"
+              label="Category"
+              value={category}
+              options={formOptions.categories}
+              placeholder="Cutting Blades"
+              optionalMark={<OptionalMark />}
+              onChange={(value) => form.setValue("category", value, { shouldDirty: true })}
+            />
 
             <div className="grid gap-2">
               <Label htmlFor="costPrice">Cost Price</Label>

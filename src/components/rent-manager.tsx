@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -161,7 +162,7 @@ function MachineCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <Button type="button" disabled={!available} onClick={() => onStart(machine)}>
           <Plus />
           Start Rent
@@ -174,6 +175,15 @@ function MachineCard({
         </Button>
       </div>
     </article>
+  );
+}
+
+function MobileField({ label, value, danger = false }: { label: string; value: React.ReactNode; danger?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[11px] uppercase text-muted-foreground">{label}</p>
+      <div className={cn("mt-1 break-words text-sm font-medium", danger && "text-red-600")}>{value}</div>
+    </div>
   );
 }
 
@@ -218,6 +228,45 @@ function OpenRentalRow({
   );
 }
 
+function OpenRentalMobileItem({
+  rental,
+  onClose
+}: {
+  rental: RentalRecord;
+  onClose: (rental: RentalRecord) => void;
+}) {
+  const totals = currentRentalTotals(rental);
+
+  return (
+    <article className="grid gap-3 border-b py-4 last:border-0">
+      <div className="min-w-0">
+        <p className="break-words text-sm font-semibold">{rental.machineTitle}</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <Badge variant="outline">{rental.machineSku}</Badge>
+          <Badge variant="warning">
+            {totals.days} day{totals.days === 1 ? "" : "s"}
+          </Badge>
+          <Badge variant="secondary">{paymentModeLabel(rental.paymentMode)}</Badge>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <MobileField label="Customer" value={customerLabel(rental)} />
+        <MobileField label="Started" value={formatDateTime(rental.startedAt)} />
+        <MobileField label="Daily" value={formatCurrency(rental.dailyRent)} />
+        <MobileField label="Deposit" value={formatCurrency(rental.deposit)} />
+        <MobileField label="Rent" value={formatCurrency(totals.rent)} />
+        <MobileField label="Balance" value={formatCurrency(totals.balance)} danger={totals.balance < 0} />
+      </div>
+
+      <Button type="button" size="sm" className="w-full" onClick={() => onClose(rental)}>
+        <CheckCircle />
+        Finish
+      </Button>
+    </article>
+  );
+}
+
 function ClosedRentalRow({ rental }: { rental: RentalRecord }) {
   return (
     <TableRow>
@@ -241,6 +290,31 @@ function ClosedRentalRow({ rental }: { rental: RentalRecord }) {
         </span>
       </TableCell>
     </TableRow>
+  );
+}
+
+function ClosedRentalMobileItem({ rental }: { rental: RentalRecord }) {
+  const balance = rental.depositBalance ?? 0;
+
+  return (
+    <article className="grid gap-3 border-b py-4 last:border-0">
+      <div className="min-w-0">
+        <p className="break-words text-sm font-semibold">{rental.machineTitle}</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <Badge variant="outline">{rental.machineSku}</Badge>
+          <Badge variant="secondary">{paymentModeLabel(rental.paymentMode)}</Badge>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <MobileField label="Customer" value={customerLabel(rental)} />
+        <MobileField label="Days" value={rental.calendarDays ?? 0} />
+        <MobileField label="Started" value={formatDateTime(rental.startedAt)} />
+        <MobileField label="Closed" value={rental.closedAt ? formatDateTime(rental.closedAt) : "-"} />
+        <MobileField label="Rent" value={formatCurrency(rental.rentTotal ?? 0)} />
+        <MobileField label="Balance" value={formatCurrency(balance)} danger={balance < 0} />
+      </div>
+    </article>
   );
 }
 
@@ -353,7 +427,7 @@ export function RentManager({
             placeholder="Search machines, SKU, brand"
           />
         </div>
-        <Button type="button" disabled={!availableMachines.length} onClick={() => openCreateDialog()}>
+        <Button type="button" disabled={!availableMachines.length} onClick={() => openCreateDialog()} className="w-full sm:w-auto">
           <Plus />
           Start Rent
         </Button>
@@ -371,7 +445,7 @@ export function RentManager({
 
       <Tabs defaultValue="open">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto">
             <TabsTrigger value="open">
               <Clock className="mr-2 size-4" />
               Open
@@ -390,26 +464,35 @@ export function RentManager({
             </CardHeader>
             <CardContent className="p-0">
               {openRentals.length ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Machine</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Started</TableHead>
-                      <TableHead>Payment</TableHead>
-                      <TableHead>Daily</TableHead>
-                      <TableHead>Deposit</TableHead>
-                      <TableHead>Rent</TableHead>
-                      <TableHead>Balance</TableHead>
-                      <TableHead />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  <div className="grid px-4 md:hidden">
                     {openRentals.map((rental) => (
-                      <OpenRentalRow key={rental.id} rental={rental} onClose={setCloseTarget} />
+                      <OpenRentalMobileItem key={rental.id} rental={rental} onClose={setCloseTarget} />
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Machine</TableHead>
+                          <TableHead>Customer</TableHead>
+                          <TableHead>Started</TableHead>
+                          <TableHead>Payment</TableHead>
+                          <TableHead>Daily</TableHead>
+                          <TableHead>Deposit</TableHead>
+                          <TableHead>Rent</TableHead>
+                          <TableHead>Balance</TableHead>
+                          <TableHead />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {openRentals.map((rental) => (
+                          <OpenRentalRow key={rental.id} rental={rental} onClose={setCloseTarget} />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               ) : (
                 <div className="grid place-items-center gap-3 px-4 py-12 text-center">
                   <Package className="size-10 text-muted-foreground" />
@@ -427,25 +510,34 @@ export function RentManager({
             </CardHeader>
             <CardContent className="p-0">
               {closedRentals.length ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Machine</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Started</TableHead>
-                      <TableHead>Closed</TableHead>
-                      <TableHead>Payment</TableHead>
-                      <TableHead>Days</TableHead>
-                      <TableHead>Rent</TableHead>
-                      <TableHead>Balance</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  <div className="grid px-4 md:hidden">
                     {closedRentals.map((rental) => (
-                      <ClosedRentalRow key={rental.id} rental={rental} />
+                      <ClosedRentalMobileItem key={rental.id} rental={rental} />
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Machine</TableHead>
+                          <TableHead>Customer</TableHead>
+                          <TableHead>Started</TableHead>
+                          <TableHead>Closed</TableHead>
+                          <TableHead>Payment</TableHead>
+                          <TableHead>Days</TableHead>
+                          <TableHead>Rent</TableHead>
+                          <TableHead>Balance</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {closedRentals.map((rental) => (
+                          <ClosedRentalRow key={rental.id} rental={rental} />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               ) : (
                 <div className="grid place-items-center gap-3 px-4 py-12 text-center">
                   <CheckCircle className="size-10 text-muted-foreground" />
@@ -458,7 +550,7 @@ export function RentManager({
       </Tabs>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 sm:max-w-xl sm:p-5">
           <DialogHeader>
             <DialogTitle>Start Rent</DialogTitle>
             <DialogDescription>Started at {startedAtPreview || "Now"}</DialogDescription>
@@ -580,10 +672,10 @@ export function RentManager({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="button" onClick={submitRental} disabled={isPending || !availableMachines.length}>
+            <Button type="button" onClick={submitRental} disabled={isPending || !availableMachines.length} className="w-full sm:w-auto">
               {isPending ? <Loader2 className="animate-spin" /> : <IndianRupee />}
               Start
             </Button>
@@ -592,7 +684,7 @@ export function RentManager({
       </Dialog>
 
       <Dialog open={Boolean(closeTarget)} onOpenChange={(open) => !open && setCloseTarget(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 sm:p-5">
           <DialogHeader>
             <DialogTitle>Close Rent</DialogTitle>
             <DialogDescription>{closeTarget?.machineTitle}</DialogDescription>
@@ -630,10 +722,10 @@ export function RentManager({
           ) : null}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setCloseTarget(null)}>
+            <Button type="button" variant="outline" onClick={() => setCloseTarget(null)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="button" onClick={closeRental} disabled={isPending}>
+            <Button type="button" onClick={closeRental} disabled={isPending} className="w-full sm:w-auto">
               {isPending ? <Loader2 className="animate-spin" /> : <CheckCircle />}
               Close Rent
             </Button>

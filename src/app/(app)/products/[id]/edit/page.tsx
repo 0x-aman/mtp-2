@@ -4,14 +4,16 @@ import { MachineForm } from "@/components/machine-form";
 import { PageHeader } from "@/components/page-header";
 import { ProductForm } from "@/components/product-form";
 import { getNextMachineSku, getNextSku, getProductById, getProductFormOptions } from "@/lib/inventory-data";
+import { getMachineFormOptions } from "@/lib/rental-data";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [product, nextSku, nextMachineSku, formOptions] = await Promise.all([
+  const [product, nextSku, nextMachineSku, formOptions, machineOptions] = await Promise.all([
     getProductById(id),
     getNextSku(),
     getNextMachineSku(),
-    getProductFormOptions()
+    getProductFormOptions(),
+    getMachineFormOptions()
   ]);
 
   if (!product) {
@@ -22,7 +24,12 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     return (
       <>
         <PageHeader title="Edit Machine" description="Update machine quantity and rent defaults." />
-        <MachineForm machine={product} defaultSku={nextMachineSku} />
+        <MachineForm
+          machine={product}
+          defaultSku={nextMachineSku}
+          brands={machineOptions.brands}
+          categories={machineOptions.categories}
+        />
       </>
     );
   }

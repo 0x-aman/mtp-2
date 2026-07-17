@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { createMachineAction, updateMachineAction } from "@/app/actions/products";
+import { OptionSelectInput } from "@/components/option-select-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,17 @@ function OptionalMark() {
   return <span className="text-xs font-normal text-muted-foreground">(optional)</span>;
 }
 
-export function MachineForm({ machine, defaultSku }: { machine?: ProductRecord | null; defaultSku: string }) {
+export function MachineForm({
+  machine,
+  defaultSku,
+  brands = [],
+  categories = []
+}: {
+  machine?: ProductRecord | null;
+  defaultSku: string;
+  brands?: string[];
+  categories?: string[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -41,6 +52,8 @@ export function MachineForm({ machine, defaultSku }: { machine?: ProductRecord |
       imageUrl: fieldValue(machine?.imageUrl)
     }
   });
+  const brand = form.watch("brand") ?? "";
+  const category = form.watch("category") ?? "";
 
   const onSubmit = form.handleSubmit((values) => {
     startTransition(async () => {
@@ -96,19 +109,25 @@ export function MachineForm({ machine, defaultSku }: { machine?: ProductRecord |
               ) : null}
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="brand" className="flex items-center gap-1.5">
-                Brand <OptionalMark />
-              </Label>
-              <Input id="brand" {...form.register("brand")} placeholder="Bosch" />
-            </div>
+            <OptionSelectInput
+              id="brand"
+              label="Brand"
+              value={brand}
+              options={brands}
+              placeholder="Bosch"
+              optionalMark={<OptionalMark />}
+              onChange={(value) => form.setValue("brand", value, { shouldDirty: true })}
+            />
 
-            <div className="grid gap-2">
-              <Label htmlFor="category" className="flex items-center gap-1.5">
-                Category <OptionalMark />
-              </Label>
-              <Input id="category" {...form.register("category")} placeholder="Drills" />
-            </div>
+            <OptionSelectInput
+              id="category"
+              label="Category"
+              value={category}
+              options={categories}
+              placeholder="Drills"
+              optionalMark={<OptionalMark />}
+              onChange={(value) => form.setValue("category", value, { shouldDirty: true })}
+            />
 
             <div className="grid gap-2">
               <Label htmlFor="defaultRentDeposit">Default Deposit</Label>
