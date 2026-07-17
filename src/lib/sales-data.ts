@@ -74,7 +74,6 @@ function lineToRecord(line: {
 function saleToRecord(sale: {
   id: string;
   saleDate: Date;
-  customer: string | null;
   paymentMode: string;
   subtotal: unknown;
   totalCost: unknown;
@@ -87,7 +86,6 @@ function saleToRecord(sale: {
   return {
     id: sale.id,
     saleDate: sale.saleDate.toISOString(),
-    customer: sale.customer,
     paymentMode: sale.paymentMode as SaleRecord["paymentMode"],
     subtotal: Number(sale.subtotal),
     totalCost: Number(sale.totalCost),

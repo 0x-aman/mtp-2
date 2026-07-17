@@ -88,10 +88,13 @@ export const saleLineSchema = z.object({
 
 export const createSaleSchema = z.object({
   saleDate: z.string().trim().optional().nullable(),
-  customer: z.string().trim().optional().nullable(),
   paymentMode: z.enum(["CASH", "UPI"]).default("CASH"),
   note: z.string().trim().optional().nullable(),
   lines: z.array(saleLineSchema).min(1, "Add at least one product")
+});
+
+export const updateSaleSchema = createSaleSchema.extend({
+  saleId: z.string().min(1, "Choose a sale log")
 });
 
 export const displaySettingsSchema = z.object({
@@ -105,5 +108,6 @@ export type BulkStockInput = z.infer<typeof bulkStockSchema>;
 export type MachineInput = z.infer<typeof machineSchema>;
 export type CreateRentalInput = z.infer<typeof createRentalSchema>;
 export type CreateSaleInput = z.infer<typeof createSaleSchema>;
+export type UpdateSaleInput = z.infer<typeof updateSaleSchema>;
 export type SaleLineInput = z.infer<typeof saleLineSchema>;
 export type DisplaySettingsInput = z.infer<typeof displaySettingsSchema>;

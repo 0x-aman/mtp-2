@@ -2,10 +2,10 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, IndianRupee, Loader2, Minus, Plus, ReceiptText, Trash2, TrendingUp, WandSparkles } from "lucide-react";
+import { CalendarDays, IndianRupee, Loader2, Minus, Pencil, Plus, ReceiptText, Trash2, TrendingUp, WandSparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { createSaleAction } from "@/app/actions/sales";
+import { createSaleAction, deleteSaleAction, updateSaleAction } from "@/app/actions/sales";
 import { ProductSalePicker } from "@/components/product-sale-picker";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { DisplaySettings, ProductRecord, SaleRecord, SalesMetrics } from "@/lib/types";
-import { cn, formatCurrency, formatDateTime } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 type DraftLine = {
   key: string;
@@ -50,12 +50,27 @@ function todayInputValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function saleDateInputValue(value: string) {
+  return new Date(value).toISOString().slice(0, 10);
+}
+
 function dateKey(value: string) {
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric"
   }).format(new Date(value));
+}
+
+function formatLogTime(value: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function saleItemCount(sale: SaleRecord) {
+  return sale.lines.reduce((total, line) => total + line.quantity, 0);
 }
 
 function normalizeSearch(value: string) {
@@ -214,20 +229,51 @@ function bulkClauseWithProduct(clause: string, productTitle: string) {
   };
 }
 
-function SalesLogCard({ sale, showMargin }: { sale: SaleRecord; showMargin: boolean }) {
+function SalesLogCard({
+  sale,
+  showMargin,
+  onEdit,
+  onDelete,
+  isDeleting
+}: {
+  sale: SaleRecord;
+  showMargin: boolean;
+  onEdit: (sale: SaleRecord) => void;
+  onDelete: (sale: SaleRecord) => void;
+  isDeleting: boolean;
+}) {
   return (
-    <article className="grid gap-3 border-b py-3 last:border-0">
+    <article className="grid gap-3 border-b bg-background px-3 py-3 last:border-0 sm:px-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-semibold">{formatDateTime(sale.saleDate)}</p>
+          <p className="text-sm font-semibold">{formatLogTime(sale.saleDate)}</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             <Badge variant="secondary">{sale.paymentMode}</Badge>
-            {sale.customer ? <Badge variant="outline">{sale.customer}</Badge> : null}
+            <Badge variant="outline">{saleItemCount(sale)} items</Badge>
           </div>
         </div>
-        <div className="text-right">
-          <p className="font-semibold">{formatCurrency(sale.subtotal)}</p>
-          {showMargin ? <p className="text-xs text-emerald-600">Profit {formatCurrency(sale.grossProfit)}</p> : null}
+        <div className="flex items-start gap-2">
+          <div className="text-right">
+            <p className="font-semibold">{formatCurrency(sale.subtotal)}</p>
+            {showMargin ? <p className="text-xs text-emerald-600">Profit {formatCurrency(sale.grossProfit)}</p> : null}
+          </div>
+          <div className="flex gap-1">
+            <Button type="button" size="icon" variant="ghost" className="size-8" onClick={() => onEdit(sale)}>
+              <Pencil className="size-4" />
+              <span className="sr-only">Edit sale</span>
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-8 text-destructive hover:text-destructive"
+              onClick={() => onDelete(sale)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+              <span className="sr-only">Delete sale</span>
+            </Button>
+          </div>
         </div>
       </div>
       <div className="grid gap-1.5 text-sm">
@@ -240,6 +286,7 @@ function SalesLogCard({ sale, showMargin }: { sale: SaleRecord; showMargin: bool
           </div>
         ))}
       </div>
+      {sale.note ? <p className="rounded-md bg-muted/40 px-2 py-1.5 text-xs text-muted-foreground">{sale.note}</p> : null}
     </article>
   );
 }
@@ -264,21 +311,39 @@ export function SalesManager({
   const [bulkText, setBulkText] = useState("");
   const [bulkCursor, setBulkCursor] = useState(0);
   const [saleDate, setSaleDate] = useState(todayInputValue());
-  const [customer, setCustomer] = useState("");
   const [paymentMode, setPaymentMode] = useState<"CASH" | "UPI">("CASH");
   const [note, setNote] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([]);
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+  const [deletingSaleId, setDeletingSaleId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const subtotal = lines.reduce((total, line) => total + line.quantity * line.unitPrice, 0);
   const profit = lines.reduce((total, line) => total + line.quantity * (line.unitPrice - line.unitCost), 0);
+  const draftStockByProduct = useMemo(() => {
+    return lines.reduce((stocks, line) => {
+      stocks.set(line.productId, Math.max(stocks.get(line.productId) ?? 0, line.stock));
+      return stocks;
+    }, new Map<string, number>());
+  }, [lines]);
+  const productsForDraft = useMemo(
+    () =>
+      products.map((product) =>
+        draftStockByProduct.has(product.id) ? { ...product, quantity: draftStockByProduct.get(product.id)! } : product
+      ),
+    [draftStockByProduct, products]
+  );
   const selectedProductReservedQuantity = selectedProduct
     ? lines
         .filter((line) => line.productId === selectedProduct.id)
         .reduce((total, line) => total + line.quantity, 0)
     : 0;
-  const selectedProductRemainingQuantity = selectedProduct ? selectedProduct.quantity - selectedProductReservedQuantity : null;
-  const bulkPreview = useMemo(() => parseBulkSaleInput(bulkText, products, lines), [bulkText, products, lines]);
+  const selectedProductStockLimit = selectedProduct
+    ? draftStockByProduct.get(selectedProduct.id) ?? selectedProduct.quantity
+    : null;
+  const selectedProductRemainingQuantity =
+    selectedProductStockLimit === null ? null : selectedProductStockLimit - selectedProductReservedQuantity;
+  const bulkPreview = useMemo(() => parseBulkSaleInput(bulkText, productsForDraft, lines), [bulkText, productsForDraft, lines]);
   const bulkHasErrors = bulkPreview.some((item) => item.status === "error");
   const bulkTotal = bulkPreview.reduce((total, item) => (item.status === "ok" ? total + item.lineTotal : total), 0);
   const bulkSuggestions = useMemo(() => {
@@ -299,17 +364,21 @@ export function SalesManager({
       return [];
     }
 
-    return rankedProducts(products, productQuery, 6);
-  }, [bulkCursor, bulkText, products]);
+    return rankedProducts(productsForDraft, productQuery, 6);
+  }, [bulkCursor, bulkText, productsForDraft]);
   const groupedSales = useMemo(() => {
-    return sales.reduce<Array<{ key: string; sales: SaleRecord[] }>>((groups, sale) => {
+    return sales.reduce<Array<{ key: string; sales: SaleRecord[]; revenue: number; profit: number; items: number }>>((groups, sale) => {
       const key = dateKey(sale.saleDate);
       const group = groups.find((item) => item.key === key);
+      const items = saleItemCount(sale);
 
       if (group) {
         group.sales.push(sale);
+        group.revenue += sale.subtotal;
+        group.profit += sale.grossProfit;
+        group.items += items;
       } else {
-        groups.push({ key, sales: [sale] });
+        groups.push({ key, sales: [sale], revenue: sale.subtotal, profit: sale.grossProfit, items });
       }
 
       return groups;
@@ -373,8 +442,10 @@ export function SalesManager({
       return;
     }
 
-    if (selectedProductReservedQuantity + quantity > selectedProduct.quantity) {
-      toast.error(`${selectedProduct.title} only has ${selectedProduct.quantity} in stock.`);
+    const stockLimit = selectedProductStockLimit ?? selectedProduct.quantity;
+
+    if (selectedProductReservedQuantity + quantity > stockLimit) {
+      toast.error(`${selectedProduct.title} only has ${stockLimit} in stock.`);
       return;
     }
 
@@ -388,7 +459,7 @@ export function SalesManager({
         quantity,
         unitPrice,
         unitCost: selectedProduct.costPrice,
-        stock: selectedProduct.quantity
+        stock: stockLimit
       }
     ]);
     setQuery("");
@@ -441,24 +512,82 @@ export function SalesManager({
     toast.success("Text sale added.");
   };
 
-  const saveSale = () => {
-    if (!lines.length) {
-      toast.error("Add at least one product.");
+  const resetSaleForm = () => {
+    setQuery("");
+    setSelectedProduct(null);
+    setQuantity(1);
+    setUnitPrice(0);
+    setBulkText("");
+    setBulkCursor(0);
+    setSaleDate(todayInputValue());
+    setPaymentMode("CASH");
+    setNote("");
+    setLines([]);
+    setEditingSaleId(null);
+  };
+
+  const startEditSale = (sale: SaleRecord) => {
+    const productMap = new Map(products.map((product) => [product.id, product]));
+    const originalQuantityByProduct = sale.lines.reduce((quantities, line) => {
+      if (line.productId) {
+        quantities.set(line.productId, (quantities.get(line.productId) ?? 0) + line.quantity);
+      }
+
+      return quantities;
+    }, new Map<string, number>());
+    const nextLines: DraftLine[] = [];
+
+    for (const line of sale.lines) {
+      if (!line.productId) {
+        toast.error("This sale has a removed product and cannot be edited safely.");
+        return;
+      }
+
+      const product = productMap.get(line.productId);
+
+      if (!product) {
+        toast.error(`${line.productTitle} is no longer in inventory.`);
+        return;
+      }
+
+      nextLines.push({
+        key: crypto.randomUUID(),
+        productId: product.id,
+        productTitle: product.title,
+        productSku: product.sku,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        unitCost: product.costPrice,
+        stock: product.quantity + (originalQuantityByProduct.get(product.id) ?? 0)
+      });
+    }
+
+    setEditingSaleId(sale.id);
+    setSaleDate(saleDateInputValue(sale.saleDate));
+    setPaymentMode(sale.paymentMode);
+    setNote(sale.note ?? "");
+    setLines(nextLines);
+    setBulkText("");
+    setBulkCursor(0);
+    setQuery("");
+    setSelectedProduct(null);
+    setQuantity(1);
+    setUnitPrice(0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const deleteSale = (sale: SaleRecord) => {
+    const confirmed = window.confirm("Delete this sale log and restore its stock?");
+
+    if (!confirmed) {
       return;
     }
 
+    setDeletingSaleId(sale.id);
     startTransition(async () => {
-      const result = await createSaleAction({
-        saleDate,
-        customer,
-        paymentMode,
-        note,
-        lines: lines.map((line) => ({
-          productId: line.productId,
-          quantity: line.quantity,
-          unitPrice: line.unitPrice
-        }))
-      });
+      const result = await deleteSaleAction(sale.id);
+
+      setDeletingSaleId(null);
 
       if (!result.ok) {
         toast.error(result.message);
@@ -466,10 +595,46 @@ export function SalesManager({
       }
 
       toast.success(result.message);
-      setLines([]);
-      setCustomer("");
-      setNote("");
-      setSaleDate(todayInputValue());
+
+      if (editingSaleId === sale.id) {
+        resetSaleForm();
+      }
+
+      router.refresh();
+    });
+  };
+
+  const saveSale = () => {
+    if (!lines.length) {
+      toast.error("Add at least one product.");
+      return;
+    }
+
+    startTransition(async () => {
+      const payload = {
+        saleDate,
+        paymentMode,
+        note,
+        lines: lines.map((line) => ({
+          productId: line.productId,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice
+        }))
+      };
+      const result = editingSaleId
+        ? await updateSaleAction({
+            saleId: editingSaleId,
+            ...payload
+          })
+        : await createSaleAction(payload);
+
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
+
+      toast.success(result.message);
+      resetSaleForm();
       router.refresh();
     });
   };
@@ -486,8 +651,17 @@ export function SalesManager({
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Quick Sale</CardTitle>
+        <CardHeader className="grid gap-2 space-y-0 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <CardTitle>{editingSaleId ? "Edit Sale" : "Quick Sale"}</CardTitle>
+            {editingSaleId ? <p className="text-sm text-muted-foreground">Editing an existing day log.</p> : null}
+          </div>
+          {editingSaleId ? (
+            <Button type="button" variant="outline" size="sm" onClick={resetSaleForm}>
+              <X />
+              Cancel Edit
+            </Button>
+          ) : null}
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="relative grid gap-2">
@@ -567,7 +741,9 @@ export function SalesManager({
             ) : null}
 
             <div className="grid gap-2 sm:flex sm:items-center sm:justify-between">
-              <p className="text-xs text-muted-foreground">Enter adds valid text items. Tab accepts the first suggestion.</p>
+              <p className="text-xs text-muted-foreground">
+                Use comma or new line: 2x product name @250. @ sets sold price; omit @ for default. Type a few letters, Tab picks first suggestion.
+              </p>
               <Button type="button" variant="outline" size="sm" onClick={addBulkLines} disabled={!bulkText.trim()}>
                 <WandSparkles />
                 Add from Text
@@ -576,7 +752,7 @@ export function SalesManager({
           </div>
 
           <div className="grid gap-2 md:grid-cols-[1fr_120px_140px_auto]">
-            <ProductSalePicker products={products} query={query} onQueryChange={setQuery} onSelect={pickProduct} />
+            <ProductSalePicker products={productsForDraft} query={query} onQueryChange={setQuery} onSelect={pickProduct} />
             <div className="grid grid-cols-[2.5rem_1fr_2.5rem] overflow-hidden rounded-md border border-input bg-background">
               <Button
                 type="button"
@@ -679,7 +855,7 @@ export function SalesManager({
             </div>
           ) : null}
 
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="saleDate">Date</Label>
               <Input id="saleDate" type="date" value={saleDate} onChange={(event) => setSaleDate(event.target.value)} />
@@ -696,13 +872,12 @@ export function SalesManager({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2 md:col-span-2">
-              <Label htmlFor="customer">Customer / note</Label>
-              <Input id="customer" value={customer} onChange={(event) => setCustomer(event.target.value)} placeholder="Optional" />
-            </div>
           </div>
 
-          <Textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Sale note (optional)" />
+          <div className="grid gap-2">
+            <Label htmlFor="saleNote">Day note</Label>
+            <Textarea id="saleNote" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional note for this sale log" />
+          </div>
 
           <div className="grid gap-2 rounded-lg bg-muted/40 p-3 sm:flex sm:items-center sm:justify-between">
             <div>
@@ -712,33 +887,51 @@ export function SalesManager({
             </div>
             <Button type="button" onClick={saveSale} disabled={isPending || !lines.length}>
               {isPending ? <Loader2 className="animate-spin" /> : <ReceiptText />}
-              Save Sale
+              {editingSaleId ? "Update Sale" : "Save Sale"}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Sales Logs</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {groupedSales.length ? (
-            <div className="grid">
-              {groupedSales.map((group) => (
-                <section key={group.key} className="border-b px-4 py-3 last:border-0">
-                  <h3 className="mb-1 text-sm font-semibold">{group.key}</h3>
-                  {group.sales.map((sale) => (
-                    <SalesLogCard key={sale.id} sale={sale} showMargin={displaySettings.showMargin} />
-                  ))}
-                </section>
-              ))}
+      <section className="grid gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">Sales Logs</h2>
+          <span className="text-xs text-muted-foreground">{groupedSales.length} days</span>
+        </div>
+
+        {groupedSales.length ? (
+          groupedSales.map((group) => (
+            <div key={group.key} className="overflow-hidden rounded-lg border bg-card">
+              <div className="grid gap-2 border-b bg-muted/45 px-3 py-3 sm:flex sm:items-center sm:justify-between sm:px-4">
+                <div>
+                  <h3 className="text-sm font-semibold">{group.key}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {group.sales.length} logs · {group.items} items
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <Badge variant="secondary">{formatCurrency(group.revenue)}</Badge>
+                  {displaySettings.showMargin ? <Badge variant="outline">Profit {formatCurrency(group.profit)}</Badge> : null}
+                </div>
+              </div>
+              <div className="grid">
+                {group.sales.map((sale) => (
+                  <SalesLogCard
+                    key={sale.id}
+                    sale={sale}
+                    showMargin={displaySettings.showMargin}
+                    onEdit={startEditSale}
+                    onDelete={deleteSale}
+                    isDeleting={deletingSaleId === sale.id}
+                  />
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="px-4 py-10 text-center text-sm text-muted-foreground">No sales logged yet.</div>
-          )}
-        </CardContent>
-      </Card>
+          ))
+        ) : (
+          <div className="rounded-lg border px-4 py-10 text-center text-sm text-muted-foreground">No sales logged yet.</div>
+        )}
+      </section>
     </div>
   );
 }

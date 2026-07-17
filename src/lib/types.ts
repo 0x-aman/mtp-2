@@ -130,7 +130,6 @@ export type SaleLineRecord = {
 export type SaleRecord = {
   id: string;
   saleDate: string;
-  customer: string | null;
   paymentMode: "CASH" | "UPI";
   subtotal: number;
   totalCost: number;
