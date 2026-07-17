@@ -20,6 +20,7 @@ import {
   Plus,
   RefreshCcw,
   Search,
+  SlidersHorizontal,
   Trash2
 } from "lucide-react";
 import { toast } from "sonner";
@@ -172,6 +173,7 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
   const [brand, setBrand] = useState("all");
   const [category, setCategory] = useState("all");
   const [stockStatus, setStockStatus] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ProductRecord | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
@@ -330,6 +332,7 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
 
   const selectedProducts = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
   const pageRows = table.getRowModel().rows;
+  const activeFilterCount = [brand !== "all", category !== "all", stockStatus !== "all"].filter(Boolean).length;
 
   const deleteOne = () => {
     if (!deleteTarget) {
@@ -445,58 +448,77 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
 
   return (
     <div className="grid min-w-0 gap-3">
-      <div className="grid min-w-0 gap-2 rounded-lg border bg-card p-2.5 sm:p-3 lg:grid-cols-[minmax(240px,1fr)_180px_180px_160px_auto]">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            ref={searchRef}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="pl-9"
-            placeholder="Search products, SKU, brand"
-          />
+      <div className="rounded-lg border bg-card p-2 sm:p-3">
+        <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(240px,1fr)_180px_180px_160px_auto]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={searchRef}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="h-9 pl-9 lg:h-10"
+              placeholder="Search products"
+            />
+          </div>
+
+          <div className={cn("grid gap-2", filtersOpen ? "grid" : "hidden", "lg:contents")}>
+            <Select value={brand} onValueChange={setBrand}>
+              <SelectTrigger className="h-9 lg:h-10">
+                <SelectValue placeholder="Brand" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All brands</SelectItem>
+                {brands.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="h-9 lg:h-10">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {categories.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={stockStatus} onValueChange={setStockStatus}>
+              <SelectTrigger className="h-9 lg:h-10">
+                <SelectValue placeholder="Stock" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All stock</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="low">Low stock</SelectItem>
+                <SelectItem value="healthy">In stock</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 lg:contents">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full lg:hidden"
+              onClick={() => setFiltersOpen((current) => !current)}
+              aria-expanded={filtersOpen}
+            >
+              <SlidersHorizontal />
+              Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="w-full lg:h-10 lg:w-auto" onClick={exportFilteredRows}>
+              <Download />
+              Export
+            </Button>
+          </div>
         </div>
-        <Select value={brand} onValueChange={setBrand}>
-          <SelectTrigger>
-            <SelectValue placeholder="Brand" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All brands</SelectItem>
-            {brands.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger>
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {categories.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={stockStatus} onValueChange={setStockStatus}>
-          <SelectTrigger>
-            <SelectValue placeholder="Stock" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All stock</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="low">Low stock</SelectItem>
-            <SelectItem value="healthy">In stock</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button type="button" variant="outline" className="w-full lg:w-auto" onClick={exportFilteredRows}>
-          <Download />
-          Export
-        </Button>
       </div>
 
       {selectedProducts.length ? (

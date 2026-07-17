@@ -16,6 +16,7 @@ export default async function DashboardPage() {
     <>
       <PageHeader
         title="Inventory"
+        actionsClassName="hidden sm:flex"
         actions={
           <>
             <Button asChild variant="outline">
@@ -35,19 +36,21 @@ export default async function DashboardPage() {
       />
       <DatabaseBanner ready={dataset.databaseReady} error={dataset.error} />
 
-      <div className="mb-3 grid gap-2 sm:mb-4 sm:grid-cols-3">
-        <StatCard title="Products" value={formatNumber(dataset.metrics.totalProducts)} icon={Boxes} tone="blue" />
+      <div className="mb-2 grid grid-cols-3 gap-1.5 sm:mb-4 sm:gap-2">
+        <StatCard title="Products" value={formatNumber(dataset.metrics.totalProducts)} icon={Boxes} tone="blue" compact />
         <StatCard
           title="Stock Value"
           value={formatCurrency(dataset.metrics.inventoryValue)}
           icon={IndianRupee}
           tone="green"
+          compact
         />
         <StatCard
           title="Low Stock"
           value={formatNumber(dataset.metrics.lowStockProducts)}
           icon={AlertTriangle}
           tone={dataset.metrics.lowStockProducts ? "red" : "green"}
+          compact
         />
       </div>
 
