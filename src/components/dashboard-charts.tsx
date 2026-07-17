@@ -18,7 +18,7 @@ import {
 } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { ProductRecord } from "@/lib/types";
+import type { DisplaySettings, ProductRecord } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 const colors = ["#2563eb", "#f97316", "#10b981", "#ef4444", "#8b5cf6", "#14b8a6"];
@@ -94,7 +94,16 @@ function ChartTooltip({
   );
 }
 
-export function DashboardCharts({ products }: { products: ProductRecord[] }) {
+export function DashboardCharts({
+  products,
+  displaySettings = {
+    showCostPrice: true,
+    showMargin: true
+  }
+}: {
+  products: ProductRecord[];
+  displaySettings?: DisplaySettings;
+}) {
   const distribution = aggregateByCategory(products);
   const brandValue = aggregateByBrand(products);
   const margins = marginOverview(products);
@@ -120,7 +129,8 @@ export function DashboardCharts({ products }: { products: ProductRecord[] }) {
         </CardContent>
       </Card>
 
-      <Card>
+      {displaySettings.showCostPrice ? (
+        <Card>
         <CardHeader>
           <CardTitle>Inventory Value by Brand</CardTitle>
         </CardHeader>
@@ -129,15 +139,17 @@ export function DashboardCharts({ products }: { products: ProductRecord[] }) {
             <BarChart data={brandValue}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="brand" tickLine={false} axisLine={false} />
-              <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `₹${Number(value) / 1000}k`} />
+              <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `Rs ${Number(value) / 1000}k`} />
               <Tooltip content={<ChartTooltip currency />} />
               <Bar dataKey="value" name="Value" fill="#2563eb" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
-      </Card>
+        </Card>
+      ) : null}
 
-      <Card>
+      {displaySettings.showMargin ? (
+        <Card>
         <CardHeader>
           <CardTitle>Margin Overview</CardTitle>
         </CardHeader>
@@ -152,7 +164,8 @@ export function DashboardCharts({ products }: { products: ProductRecord[] }) {
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
-      </Card>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

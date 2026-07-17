@@ -1,8 +1,10 @@
 import { CheckCircle2, KeyRound, LockKeyhole, ShieldCheck, XCircle } from "lucide-react";
 
+import { DisplaySettingsForm } from "@/components/display-settings-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEFAULT_SESSION_MAX_AGE_SECONDS } from "@/lib/session";
+import { getDisplaySettings } from "@/lib/settings";
 
 function EnvStatus({ label, configured }: { label: string; configured: boolean }) {
   return (
@@ -32,11 +34,21 @@ function formatSessionLength(seconds: number) {
   return `${minutes} minute${minutes === 1 ? "" : "s"}`;
 }
 
-export function SettingsCards() {
+export async function SettingsCards() {
   const sessionSeconds = Number(process.env.SESSION_MAX_AGE_SECONDS ?? DEFAULT_SESSION_MAX_AGE_SECONDS);
+  const displaySettings = await getDisplaySettings();
 
   return (
     <div className="grid gap-4 xl:grid-cols-2">
+      <Card className="xl:col-span-2">
+        <CardHeader>
+          <CardTitle>Display Preferences</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DisplaySettingsForm settings={displaySettings} />
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

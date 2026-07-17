@@ -36,10 +36,16 @@ export type DashboardMetrics = {
   lowStockProducts: number;
 };
 
+export type DisplaySettings = {
+  showCostPrice: boolean;
+  showMargin: boolean;
+};
+
 export type InventoryDataset = {
   products: ProductRecord[];
   activity: ActivityRecord[];
   metrics: DashboardMetrics;
+  displaySettings: DisplaySettings;
   databaseReady: boolean;
   error?: string;
 };
@@ -105,6 +111,59 @@ export type RentalDataset = {
   metrics: RentalMetrics;
   databaseReady: boolean;
   error?: string;
+};
+
+export type SaleLineRecord = {
+  id: string;
+  saleId: string;
+  productId: string | null;
+  productTitle: string;
+  productSku: string;
+  quantity: number;
+  unitPrice: number;
+  unitCost: number;
+  lineTotal: number;
+  lineProfit: number;
+  createdAt: string;
+};
+
+export type SaleRecord = {
+  id: string;
+  saleDate: string;
+  customer: string | null;
+  paymentMode: "CASH" | "UPI" | "CARD" | "OTHER";
+  subtotal: number;
+  totalCost: number;
+  grossProfit: number;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lines: SaleLineRecord[];
+};
+
+export type SalesMetrics = {
+  todayRevenue: number;
+  todayProfit: number;
+  todayItems: number;
+  weekRevenue: number;
+  weekProfit: number;
+  monthRevenue: number;
+  monthProfit: number;
+};
+
+export type SalesDataset = {
+  products: ProductRecord[];
+  sales: SaleRecord[];
+  metrics: SalesMetrics;
+  displaySettings: DisplaySettings;
+  databaseReady: boolean;
+  error?: string;
+};
+
+export type ShopDetails = {
+  name: string;
+  address: string;
+  contact: string;
 };
 
 export type ProductFormOptions = {

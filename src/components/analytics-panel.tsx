@@ -1,6 +1,6 @@
 import { DashboardCharts } from "@/components/dashboard-charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { ProductRecord } from "@/lib/types";
+import type { DisplaySettings, ProductRecord } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 function categoryRows(products: ProductRecord[]) {
@@ -25,12 +25,21 @@ function categoryRows(products: ProductRecord[]) {
   ).sort((a, b) => b.value - a.value);
 }
 
-export function AnalyticsPanel({ products }: { products: ProductRecord[] }) {
+export function AnalyticsPanel({
+  products,
+  displaySettings = {
+    showCostPrice: true,
+    showMargin: true
+  }
+}: {
+  products: ProductRecord[];
+  displaySettings?: DisplaySettings;
+}) {
   const rows = categoryRows(products);
 
   return (
     <div className="grid gap-4">
-      <DashboardCharts products={products} />
+      <DashboardCharts products={products} displaySettings={displaySettings} />
 
       <Card>
         <CardHeader>
@@ -43,8 +52,8 @@ export function AnalyticsPanel({ products }: { products: ProductRecord[] }) {
                 <tr className="border-b text-left text-xs uppercase text-muted-foreground">
                   <th className="py-2.5 pr-4 font-medium">Category</th>
                   <th className="py-2.5 pr-4 font-medium">Qty</th>
-                  <th className="py-2.5 pr-4 font-medium">Value</th>
-                  <th className="py-2.5 pr-4 font-medium">Profit</th>
+                  {displaySettings.showCostPrice ? <th className="py-2.5 pr-4 font-medium">Value</th> : null}
+                  {displaySettings.showMargin ? <th className="py-2.5 pr-4 font-medium">Profit</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -52,8 +61,8 @@ export function AnalyticsPanel({ products }: { products: ProductRecord[] }) {
                   <tr key={row.category} className="border-b last:border-0">
                     <td className="py-2.5 pr-4 font-medium">{row.category}</td>
                     <td className="py-2.5 pr-4">{row.quantity}</td>
-                    <td className="py-2.5 pr-4">{formatCurrency(row.value)}</td>
-                    <td className="py-2.5 pr-4">{formatCurrency(row.profit)}</td>
+                    {displaySettings.showCostPrice ? <td className="py-2.5 pr-4">{formatCurrency(row.value)}</td> : null}
+                    {displaySettings.showMargin ? <td className="py-2.5 pr-4">{formatCurrency(row.profit)}</td> : null}
                   </tr>
                 ))}
               </tbody>

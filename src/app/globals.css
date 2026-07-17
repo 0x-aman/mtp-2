@@ -56,3 +56,32 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+@media print {
+  @page {
+    margin: 12mm;
+    size: A4;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    border: 0 !important;
+    box-shadow: none !important;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

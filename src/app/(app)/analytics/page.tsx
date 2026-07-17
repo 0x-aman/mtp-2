@@ -10,7 +10,7 @@ export default async function AnalyticsPage() {
     <>
       <PageHeader title="Analytics" description="Category, brand, margin, and low-stock views for inventory decisions." />
       <DatabaseBanner ready={dataset.databaseReady} error={dataset.error} />
-      <AnalyticsPanel products={dataset.products} />
+      <AnalyticsPanel products={dataset.products} displaySettings={dataset.displaySettings} />
     </>
   );
 }

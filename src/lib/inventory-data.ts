@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { demoActivity, demoProducts } from "@/lib/demo-data";
+import { defaultDisplaySettings, getDisplaySettings } from "@/lib/settings";
 import type {
   ActivityRecord,
   DashboardMetrics,
@@ -103,6 +104,7 @@ function fallbackDataset(error?: unknown): InventoryDataset {
     products,
     activity: demoActivity,
     metrics: calculateMetrics(products),
+    displaySettings: defaultDisplaySettings,
     databaseReady: false,
     error: error instanceof Error ? error.message : "Database is not configured yet."
   };
@@ -144,7 +146,7 @@ function buildFormOptions(products: ProductRecord[]): ProductFormOptions {
 
 export async function getInventoryDataset(): Promise<InventoryDataset> {
   try {
-    const [products, activity] = await Promise.all([
+    const [products, activity, displaySettings] = await Promise.all([
       prisma.product.findMany({
         where: {
           isMachine: false
@@ -163,7 +165,8 @@ export async function getInventoryDataset(): Promise<InventoryDataset> {
           createdAt: "desc"
         },
         take: 10
-      })
+      }),
+      getDisplaySettings()
     ]);
 
     const productRecords = products.map(productToRecord);
@@ -172,6 +175,7 @@ export async function getInventoryDataset(): Promise<InventoryDataset> {
       products: productRecords,
       activity: activity.map(activityToRecord),
       metrics: calculateMetrics(productRecords),
+      displaySettings,
       databaseReady: true
     };
   } catch (error) {

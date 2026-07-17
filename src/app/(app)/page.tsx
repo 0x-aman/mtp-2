@@ -7,7 +7,7 @@ import { ProductTable } from "@/components/product-table";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { getInventoryDataset } from "@/lib/inventory-data";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const dataset = await getInventoryDataset();
@@ -36,15 +36,22 @@ export default async function DashboardPage() {
       />
       <DatabaseBanner ready={dataset.databaseReady} error={dataset.error} />
 
-      <div className="mb-2 grid grid-cols-3 gap-1.5 sm:mb-4 sm:gap-2">
+      <div
+        className={cn(
+          "mb-2 grid gap-1.5 sm:mb-4 sm:gap-2",
+          dataset.displaySettings.showCostPrice ? "grid-cols-3" : "grid-cols-2"
+        )}
+      >
         <StatCard title="Products" value={formatNumber(dataset.metrics.totalProducts)} icon={Boxes} tone="blue" compact />
-        <StatCard
-          title="Stock Value"
-          value={formatCurrency(dataset.metrics.inventoryValue)}
-          icon={IndianRupee}
-          tone="green"
-          compact
-        />
+        {dataset.displaySettings.showCostPrice ? (
+          <StatCard
+            title="Stock Value"
+            value={formatCurrency(dataset.metrics.inventoryValue)}
+            icon={IndianRupee}
+            tone="green"
+            compact
+          />
+        ) : null}
         <StatCard
           title="Low Stock"
           value={formatNumber(dataset.metrics.lowStockProducts)}
@@ -54,7 +61,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <ProductTable products={dataset.products} databaseReady={dataset.databaseReady} />
+      <ProductTable products={dataset.products} databaseReady={dataset.databaseReady} displaySettings={dataset.displaySettings} />
     </>
   );
 }

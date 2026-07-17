@@ -8,8 +8,10 @@ import {
   Clock,
   Drill,
   FileUp,
+  FileText,
   LogOut,
   PackagePlus,
+  ReceiptText,
   Settings
 } from "lucide-react";
 
@@ -22,6 +24,8 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Inventory", icon: Boxes },
   { href: "/rent", label: "Rent", icon: Clock },
+  { href: "/sales", label: "Sales", icon: ReceiptText },
+  { href: "/bill", label: "Bill Generator", icon: FileText },
   { href: "/products/new", label: "New Product", icon: PackagePlus },
   { href: "/import/csv", label: "Import CSV", icon: FileUp },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
@@ -49,7 +53,7 @@ function isActivePath(pathname: string, href: string) {
   }
 
   if (href === "/more") {
-    return pathname === "/more" || pathname.startsWith("/analytics") || pathname.startsWith("/settings");
+    return pathname === "/more" || pathname.startsWith("/analytics") || pathname.startsWith("/settings") || pathname.startsWith("/sales") || pathname.startsWith("/bill");
   }
 
   if (href === "/import/csv" && pathname.startsWith("/import")) {

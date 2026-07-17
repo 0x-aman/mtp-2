@@ -54,7 +54,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { ProductRecord } from "@/lib/types";
+import type { DisplaySettings, ProductRecord } from "@/lib/types";
 import { cn, formatCurrency, getStockStatus, makeCsv } from "@/lib/utils";
 
 function uniqueValues(products: ProductRecord[], key: "brand" | "category") {
@@ -110,12 +110,20 @@ function ProductActions({
 
 function ProductMobileCard({
   product,
-  onDelete
+  onDelete,
+  displaySettings
 }: {
   product: ProductRecord;
   onDelete: (product: ProductRecord) => void;
+  displaySettings: DisplaySettings;
 }) {
   const meta = [product.brand, product.category].filter(Boolean).join(" / ");
+  const detailItems = [
+    { label: "Qty", value: product.quantity },
+    { label: "Sell", value: formatCurrency(product.sellingPrice) },
+    ...(displaySettings.showCostPrice ? [{ label: "Cost", value: formatCurrency(product.costPrice) }] : []),
+    ...(displaySettings.showMargin ? [{ label: "Margin", value: `${product.marginPercent}%` }] : [])
+  ];
 
   return (
     <article className="rounded-lg border bg-card p-2.5">
@@ -142,19 +150,18 @@ function ProductMobileCard({
         </div>
       </div>
 
-      <div className="mt-2.5 grid grid-cols-3 gap-1.5 rounded-md bg-muted/50 p-1.5 text-center">
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase text-muted-foreground">Qty</p>
-          <p className="truncate text-sm font-semibold">{product.quantity}</p>
-        </div>
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase text-muted-foreground">Sell</p>
-          <p className="truncate text-sm font-semibold">{formatCurrency(product.sellingPrice)}</p>
-        </div>
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase text-muted-foreground">Margin</p>
-          <p className="truncate text-sm font-semibold">{product.marginPercent}%</p>
-        </div>
+      <div
+        className={cn(
+          "mt-2.5 grid gap-1.5 rounded-md bg-muted/50 p-1.5 text-center",
+          detailItems.length <= 2 ? "grid-cols-2" : detailItems.length === 3 ? "grid-cols-3" : "grid-cols-4"
+        )}
+      >
+        {detailItems.map((item) => (
+          <div key={item.label} className="min-w-0">
+            <p className="text-[11px] uppercase text-muted-foreground">{item.label}</p>
+            <p className="truncate text-sm font-semibold">{item.value}</p>
+          </div>
+        ))}
       </div>
 
       <div className="mt-2.5">
@@ -164,7 +171,15 @@ function ProductMobileCard({
   );
 }
 
-export function ProductTable({ products, databaseReady }: { products: ProductRecord[]; databaseReady: boolean }) {
+export function ProductTable({
+  products,
+  databaseReady,
+  displaySettings
+}: {
+  products: ProductRecord[];
+  databaseReady: boolean;
+  displaySettings: DisplaySettings;
+}) {
   const router = useRouter();
   const [rows, setRows] = useState(products);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -225,8 +240,8 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
     [brand, category, rows, search, stockStatus]
   );
 
-  const columns = useMemo<ColumnDef<ProductRecord>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<ProductRecord>[]>(() => {
+    const tableColumns: ColumnDef<ProductRecord>[] = [
       {
         id: "select",
         header: ({ table }) => (
@@ -274,22 +289,32 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
             </div>
           </div>
         )
-      },
-      {
+      }
+    ];
+
+    if (displaySettings.showCostPrice) {
+      tableColumns.push({
         accessorKey: "costPrice",
         header: ({ column }) => <SortButton label="Cost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
         cell: ({ row }) => formatCurrency(row.original.costPrice)
-      },
-      {
-        accessorKey: "sellingPrice",
-        header: ({ column }) => <SortButton label="Sell" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
-        cell: ({ row }) => <span className="font-medium">{formatCurrency(row.original.sellingPrice)}</span>
-      },
-      {
+      });
+    }
+
+    tableColumns.push({
+      accessorKey: "sellingPrice",
+      header: ({ column }) => <SortButton label="Sell" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
+      cell: ({ row }) => <span className="font-medium">{formatCurrency(row.original.sellingPrice)}</span>
+    });
+
+    if (displaySettings.showMargin) {
+      tableColumns.push({
         accessorKey: "marginPercent",
         header: ({ column }) => <SortButton label="Margin" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
         cell: ({ row }) => `${row.original.marginPercent}%`
-      },
+      });
+    }
+
+    tableColumns.push(
       {
         accessorKey: "quantity",
         header: ({ column }) => <SortButton label="Qty" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
@@ -306,9 +331,10 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
         cell: ({ row }) => <ProductActions product={row.original} onDelete={setDeleteTarget} />,
         enableSorting: false
       }
-    ],
-    []
-  );
+    );
+
+    return tableColumns;
+  }, [displaySettings.showCostPrice, displaySettings.showMargin]);
 
   const table = useReactTable({
     data: filteredProducts,
@@ -539,7 +565,14 @@ export function ProductTable({ products, databaseReady }: { products: ProductRec
 
       <div className="grid gap-2.5 md:hidden">
         {pageRows.length ? (
-          pageRows.map((row) => <ProductMobileCard key={row.id} product={row.original} onDelete={setDeleteTarget} />)
+          pageRows.map((row) => (
+            <ProductMobileCard
+              key={row.id}
+              product={row.original}
+              onDelete={setDeleteTarget}
+              displaySettings={displaySettings}
+            />
+          ))
         ) : (
           <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
             No products match the current filters.

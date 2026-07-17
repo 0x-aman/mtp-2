@@ -18,7 +18,7 @@ import {
   type ProductInput
 } from "@/lib/validation";
 
-const revalidatedPaths = ["/", "/products", "/rent", "/analytics", "/import/csv", "/import/ocr"];
+const revalidatedPaths = ["/", "/products", "/rent", "/analytics", "/import/csv", "/import/ocr", "/add", "/more", "/sales", "/bill"];
 
 function revalidateInventory() {
   for (const route of revalidatedPaths) {

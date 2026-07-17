@@ -80,8 +80,30 @@ export const createRentalSchema = z.object({
   note: z.string().trim().optional().nullable()
 });
 
+export const saleLineSchema = z.object({
+  productId: z.string().min(1, "Choose a product"),
+  quantity: z.coerce.number().int().min(1, "Quantity must be at least 1"),
+  unitPrice: money
+});
+
+export const createSaleSchema = z.object({
+  saleDate: z.string().trim().optional().nullable(),
+  customer: z.string().trim().optional().nullable(),
+  paymentMode: z.enum(["CASH", "UPI", "CARD", "OTHER"]).default("CASH"),
+  note: z.string().trim().optional().nullable(),
+  lines: z.array(saleLineSchema).min(1, "Add at least one product")
+});
+
+export const displaySettingsSchema = z.object({
+  showCostPrice: z.boolean(),
+  showMargin: z.boolean()
+});
+
 export type ProductInput = z.infer<typeof productSchema>;
 export type CsvProductInput = z.infer<typeof csvProductSchema>;
 export type BulkStockInput = z.infer<typeof bulkStockSchema>;
 export type MachineInput = z.infer<typeof machineSchema>;
 export type CreateRentalInput = z.infer<typeof createRentalSchema>;
+export type CreateSaleInput = z.infer<typeof createSaleSchema>;
+export type SaleLineInput = z.infer<typeof saleLineSchema>;
+export type DisplaySettingsInput = z.infer<typeof displaySettingsSchema>;

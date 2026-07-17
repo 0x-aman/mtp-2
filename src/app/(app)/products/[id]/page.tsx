@@ -10,11 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProductById } from "@/lib/inventory-data";
+import { getDisplaySettings } from "@/lib/settings";
 import { compactDate, formatCurrency } from "@/lib/utils";
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const product = await getProductById(id);
+  const [product, displaySettings] = await Promise.all([getProductById(id), getDisplaySettings()]);
 
   if (!product) {
     notFound();
@@ -102,9 +103,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </>
             ) : (
               <>
-                <StatCard title="Inventory Value" value={formatCurrency(inventoryValue)} icon={WalletCards} tone="orange" />
+                {displaySettings.showCostPrice ? (
+                  <StatCard title="Inventory Value" value={formatCurrency(inventoryValue)} icon={WalletCards} tone="orange" />
+                ) : null}
                 <StatCard title="Potential Revenue" value={formatCurrency(revenue)} icon={TrendingUp} tone="green" />
-                <StatCard title="Expected Profit" value={formatCurrency(profit)} icon={IndianRupee} tone="blue" />
+                {displaySettings.showMargin ? (
+                  <StatCard title="Expected Profit" value={formatCurrency(profit)} icon={IndianRupee} tone="blue" />
+                ) : null}
               </>
             )}
           </div>
@@ -135,18 +140,22 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 </>
               ) : (
                 <>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Cost Price</p>
-                    <p className="mt-1 font-medium">{formatCurrency(product.costPrice)}</p>
-                  </div>
+                  {displaySettings.showCostPrice ? (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Cost Price</p>
+                      <p className="mt-1 font-medium">{formatCurrency(product.costPrice)}</p>
+                    </div>
+                  ) : null}
                   <div>
                     <p className="text-sm text-muted-foreground">Selling Price</p>
                     <p className="mt-1 font-medium">{formatCurrency(product.sellingPrice)}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Margin</p>
-                    <p className="mt-1 font-medium">{product.marginPercent}%</p>
-                  </div>
+                  {displaySettings.showMargin ? (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Margin</p>
+                      <p className="mt-1 font-medium">{product.marginPercent}%</p>
+                    </div>
+                  ) : null}
                 </>
               )}
               <div className="md:col-span-2">
