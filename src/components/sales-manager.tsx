@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, IndianRupee, Loader2, Minus, Pencil, Plus, ReceiptText, Trash2, TrendingUp, WandSparkles, X } from "lucide-react";
+import { CalendarDays, IndianRupee, Loader2, Minus, Pencil, Plus, ReceiptText, Settings2, Trash2, TrendingUp, WandSparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { createSaleAction, deleteSaleAction, updateSaleAction } from "@/app/actions/sales";
@@ -96,13 +96,6 @@ function saleItemCount(sale: SaleRecord) {
   return sale.lines.reduce((total, line) => total + line.quantity, 0);
 }
 
-function startOfToday() {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-
-  return date;
-}
-
 function weekDayOptions(sales: SaleRecord[]) {
   const today = startOfToday();
   const tomorrow = addCalendarDays(today, 1);
@@ -145,6 +138,13 @@ function weekDayOptions(sales: SaleRecord[]) {
       ...summary
     };
   });
+}
+
+function startOfToday() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+
+  return date;
 }
 
 function startOfWeek() {
@@ -213,6 +213,21 @@ function sortSales(sales: SaleRecord[]) {
 
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+}
+
+function salesDayLabel(value: string) {
+  const todayValue = todayInputValue();
+  const date = localDateFromInput(value);
+
+  if (value === todayValue) {
+    return "Today";
+  }
+
+  if (value === dateInputValueFromDate(addCalendarDays(startOfToday(), 1))) {
+    return "Tomorrow";
+  }
+
+  return dateKey(date.toISOString());
 }
 
 function draftToSaleRecord({
@@ -494,15 +509,19 @@ function SalesLogCard({
   isDeleting: boolean;
   isSyncing: boolean;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
   return (
     <article className="grid gap-3 border-b bg-background px-3 py-3 last:border-0 sm:px-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold">{formatLogTime(sale.saleDate)}</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
-            <Badge variant="secondary">{sale.paymentMode}</Badge>
             <Badge variant="outline">{saleItemCount(sale)} items</Badge>
             {isSyncing ? <Badge variant="outline">Syncing</Badge> : null}
+            <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setDetailsOpen((open) => !open)}>
+              {detailsOpen ? "Hide" : "Details"}
+            </Button>
           </div>
         </div>
         <div className="flex items-start gap-2">
@@ -539,7 +558,12 @@ function SalesLogCard({
           </div>
         ))}
       </div>
-      {sale.note ? <p className="rounded-md bg-muted/40 px-2 py-1.5 text-xs text-muted-foreground">{sale.note}</p> : null}
+      {detailsOpen ? (
+        <div className="grid gap-1 rounded-md bg-muted/40 px-2 py-1.5 text-xs text-muted-foreground">
+          <p>Payment: {sale.paymentMode === "UPI" ? "UPI" : "Cash"}</p>
+          {sale.note ? <p>{sale.note}</p> : null}
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -566,6 +590,7 @@ export function SalesManager({
   const [bulkText, setBulkText] = useState("");
   const [bulkCursor, setBulkCursor] = useState(0);
   const [saleDate, setSaleDate] = useState(todayInputValue());
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [paymentMode, setPaymentMode] = useState<"CASH" | "UPI">("CASH");
   const [note, setNote] = useState("");
@@ -633,18 +658,14 @@ export function SalesManager({
     return rankedProducts(productsForDraft, productQuery, 6);
   }, [bulkCursor, bulkText, productsForDraft]);
   const dayOptions = useMemo(() => weekDayOptions(visibleSales), [visibleSales]);
-  const selectedDay = dayOptions.find((day) => day.value === saleDate) ?? {
-    value: saleDate,
-    label: dateKey(localDateFromInput(saleDate).toISOString()),
-    dateLabel: new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short" }).format(localDateFromInput(saleDate)),
-    logs: 0,
-    revenue: 0,
-    items: 0
-  };
   const selectedDaySales = useMemo(
     () => sortSales(visibleSales.filter((sale) => sameCalendarDate(sale.saleDate, saleDate))),
     [saleDate, visibleSales]
   );
+  const selectedDayLabel = salesDayLabel(saleDate);
+  const selectedDayDateLabel = new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short" }).format(localDateFromInput(saleDate));
+  const selectedDayRevenue = selectedDaySales.reduce((total, sale) => total + sale.subtotal, 0);
+  const selectedDayItems = selectedDaySales.reduce((total, sale) => total + saleItemCount(sale), 0);
   const selectedDayProfit = selectedDaySales.reduce((total, sale) => total + sale.grossProfit, 0);
 
   const pickProduct = (product: ProductRecord) => {
@@ -781,6 +802,7 @@ export function SalesManager({
     setUnitPrice(0);
     setBulkText("");
     setBulkCursor(0);
+    setAdvancedOpen(false);
     setManualOpen(false);
     setPaymentMode("CASH");
     setNote("");
@@ -788,7 +810,7 @@ export function SalesManager({
     setEditingSaleId(null);
   };
 
-  const selectSalesDay = (value: string) => {
+  const changeSaleDate = (value: string) => {
     if (editingSaleId || lines.length) {
       resetSaleForm();
     }
@@ -851,7 +873,8 @@ export function SalesManager({
     setSelectedProduct(null);
     setQuantity(1);
     setUnitPrice(0);
-    setManualOpen(true);
+    setAdvancedOpen(true);
+    setManualOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -989,12 +1012,8 @@ export function SalesManager({
         <StatCard title="Month" value={formatCurrency(visibleMetrics.monthRevenue)} icon={CalendarDays} tone="neutral" compact />
       </div>
 
-      <section className="grid gap-2">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold">Choose Day</h2>
-          <span className="text-xs text-muted-foreground">This week</span>
-        </div>
-        <div className="-mx-2.5 flex gap-2 overflow-x-auto px-2.5 pb-1 sm:mx-0 sm:grid sm:grid-cols-4 sm:px-0 lg:grid-cols-7">
+      <section className="-mx-2.5 overflow-x-auto px-2.5 sm:mx-0 sm:px-0" aria-label="Sales day">
+        <div className="flex gap-1.5 pb-1">
           {dayOptions.map((day) => {
             const active = day.value === saleDate;
 
@@ -1002,16 +1021,16 @@ export function SalesManager({
               <button
                 key={day.value}
                 type="button"
-                onClick={() => selectSalesDay(day.value)}
+                onClick={() => changeSaleDate(day.value)}
                 className={cn(
-                  "grid min-w-28 shrink-0 gap-1 rounded-md border bg-card px-3 py-2 text-left text-sm transition-colors sm:min-w-0",
-                  active ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted"
+                  "grid min-w-[4.8rem] shrink-0 gap-0.5 rounded-md border px-2 py-1.5 text-left text-xs transition-colors sm:min-w-0 sm:flex-1",
+                  active ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
                 )}
               >
-                <span className="font-semibold">{day.label}</span>
-                <span className={cn("text-xs", active ? "text-primary-foreground/80" : "text-muted-foreground")}>{day.dateLabel}</span>
-                <span className={cn("text-xs", active ? "text-primary-foreground/90" : "text-muted-foreground")}>
-                  {day.logs ? `${formatCurrency(day.revenue)} - ${day.logs} logs` : "No sales"}
+                <span className="truncate font-semibold">{day.label}</span>
+                <span className={cn("truncate text-[11px]", active ? "text-primary-foreground/80" : "text-muted-foreground")}>{day.dateLabel}</span>
+                <span className={cn("truncate text-[11px]", active ? "text-primary-foreground/90" : "text-muted-foreground")}>
+                  {day.logs ? `${day.logs} log${day.logs === 1 ? "" : "s"}` : "No sales"}
                 </span>
               </button>
             );
@@ -1023,9 +1042,7 @@ export function SalesManager({
         <CardHeader className="grid gap-2 space-y-0 sm:flex sm:items-center sm:justify-between">
           <div>
             <CardTitle>{editingSaleId ? "Edit Sale" : "Quick Sale"}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {editingSaleId ? "Editing an existing log for" : "Adding sales for"} {selectedDay.label}, {selectedDay.dateLabel}
-            </p>
+            <p className="text-sm text-muted-foreground">Type sale lines and save. Today and Cash are used unless changed in Advanced.</p>
           </div>
           {editingSaleId ? (
             <Button type="button" variant="outline" size="sm" onClick={resetSaleForm}>
@@ -1123,67 +1140,102 @@ export function SalesManager({
           </div>
 
           <div className="grid gap-2">
-            <Button type="button" variant="outline" size="sm" className="w-full sm:w-fit" onClick={() => setManualOpen((open) => !open)}>
-              {manualOpen ? <Minus /> : <Plus />}
-              {manualOpen ? "Hide Manual Add" : "Manual Add"}
+            <Button type="button" variant="outline" size="sm" className="w-full sm:w-fit" onClick={() => setAdvancedOpen((open) => !open)}>
+              <Settings2 />
+              {advancedOpen ? "Hide Advanced" : "Advanced"}
             </Button>
 
-            {manualOpen ? (
-              <div className="grid gap-2 rounded-lg border bg-muted/25 p-2 md:grid-cols-[1fr_120px_140px_auto]">
-                <ProductSalePicker products={productsForDraft} query={query} onQueryChange={setQuery} onSelect={pickProduct} />
-                <div className="grid grid-cols-[2.5rem_1fr_2.5rem] overflow-hidden rounded-md border border-input bg-background">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-10 rounded-none"
-                    onClick={decrementQuantity}
-                    disabled={quantity <= 1}
-                  >
-                    <Minus />
-                    <span className="sr-only">Decrease quantity</span>
-                  </Button>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={quantity}
-                    onChange={(event) => updateQuantity(Number(event.target.value))}
-                    placeholder="Qty"
-                    className="h-10 rounded-none border-0 text-center focus-visible:ring-0"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-10 rounded-none"
-                    onClick={incrementQuantity}
-                    disabled={selectedProductRemainingQuantity !== null && selectedProductRemainingQuantity <= quantity}
-                  >
-                    <Plus />
-                    <span className="sr-only">Increase quantity</span>
-                  </Button>
+            {advancedOpen ? (
+              <div className="grid gap-3 rounded-lg border bg-muted/25 p-3">
+                <div className="grid gap-3 md:grid-cols-[1fr_180px]">
+                  <div className="grid gap-2">
+                    <Label htmlFor="saleDate">Sale date</Label>
+                    <Input id="saleDate" type="date" value={saleDate} onChange={(event) => changeSaleDate(event.target.value || todayInputValue())} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Payment</Label>
+                    <Select value={paymentMode} onValueChange={(value) => setPaymentMode(value as typeof paymentMode)}>
+                      <SelectTrigger>
+                        <span>{paymentMode === "UPI" ? "UPI" : "Cash"}</span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CASH">Cash</SelectItem>
+                        <SelectItem value="UPI">UPI</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={unitPrice}
-                  onChange={(event) => setUnitPrice(Number(event.target.value))}
-                  placeholder="Sold price"
-                />
-                <Button type="button" onClick={addLine} className="w-full">
-                  <Plus />
-                  Add
-                </Button>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="saleNote">Note</Label>
+                  <Textarea id="saleNote" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional note" />
+                </div>
+
+                <div className="grid gap-2">
+                  <Button type="button" variant="outline" size="sm" className="w-full sm:w-fit" onClick={() => setManualOpen((open) => !open)}>
+                    {manualOpen ? <Minus /> : <Plus />}
+                    {manualOpen ? "Hide Manual Add" : "Manual Add"}
+                  </Button>
+
+                  {manualOpen ? (
+                    <div className="grid gap-2 rounded-lg border bg-background p-2 md:grid-cols-[1fr_120px_140px_auto]">
+                      <ProductSalePicker products={productsForDraft} query={query} onQueryChange={setQuery} onSelect={pickProduct} />
+                      <div className="grid grid-cols-[2.5rem_1fr_2.5rem] overflow-hidden rounded-md border border-input bg-background">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-10 rounded-none"
+                          onClick={decrementQuantity}
+                          disabled={quantity <= 1}
+                        >
+                          <Minus />
+                          <span className="sr-only">Decrease quantity</span>
+                        </Button>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={quantity}
+                          onChange={(event) => updateQuantity(Number(event.target.value))}
+                          placeholder="Qty"
+                          className="h-10 rounded-none border-0 text-center focus-visible:ring-0"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-10 rounded-none"
+                          onClick={incrementQuantity}
+                          disabled={selectedProductRemainingQuantity !== null && selectedProductRemainingQuantity <= quantity}
+                        >
+                          <Plus />
+                          <span className="sr-only">Increase quantity</span>
+                        </Button>
+                      </div>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={unitPrice}
+                        onChange={(event) => setUnitPrice(Number(event.target.value))}
+                        placeholder="Sold price"
+                      />
+                      <Button type="button" onClick={addLine} className="w-full">
+                        <Plus />
+                        Add
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  {selectedProduct ? (
+                    <p className="text-xs text-muted-foreground">
+                      Selected {selectedProduct.sku}. Stock {selectedProduct.quantity}. Default price {formatCurrency(selectedProduct.sellingPrice)}.
+                    </p>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </div>
-
-          {selectedProduct ? (
-            <p className="text-xs text-muted-foreground">
-              Selected {selectedProduct.sku}. Stock {selectedProduct.quantity}. Default price {formatCurrency(selectedProduct.sellingPrice)}.
-            </p>
-          ) : null}
 
           {lines.length ? (
             <div className="grid gap-2 rounded-lg border p-2">
@@ -1235,32 +1287,6 @@ export function SalesManager({
             </div>
           ) : null}
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="grid gap-1 rounded-md border bg-muted/30 px-3 py-2">
-              <span className="text-xs text-muted-foreground">Selected Day</span>
-              <span className="text-sm font-semibold">
-                {selectedDay.label}, {selectedDay.dateLabel}
-              </span>
-            </div>
-            <div className="grid gap-2">
-              <Label>Payment</Label>
-              <Select value={paymentMode} onValueChange={(value) => setPaymentMode(value as typeof paymentMode)}>
-                <SelectTrigger>
-                  <span>{paymentMode === "UPI" ? "UPI" : "Cash"}</span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CASH">Cash</SelectItem>
-                  <SelectItem value="UPI">UPI</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="saleNote">Day note</Label>
-            <Textarea id="saleNote" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional note for this sale log" />
-          </div>
-
           <div className="grid gap-2 rounded-lg bg-muted/40 p-3 sm:flex sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Sale Total</p>
@@ -1278,20 +1304,20 @@ export function SalesManager({
       <section className="grid gap-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold">{selectedDay.label} Logs</h2>
-            <p className="text-xs text-muted-foreground">{selectedDay.dateLabel}</p>
+            <h2 className="text-base font-semibold">{selectedDayLabel} Sales</h2>
+            <p className="text-xs text-muted-foreground">{selectedDayDateLabel}</p>
           </div>
           <div className="text-right text-xs text-muted-foreground">
             <p>{selectedDaySales.length} logs</p>
-            <p>{selectedDay.items} items</p>
+            <p>{selectedDayItems} items</p>
           </div>
         </div>
 
         <div className="overflow-hidden rounded-lg border bg-card">
           <div className="grid gap-2 border-b bg-muted/45 px-3 py-3 sm:flex sm:items-center sm:justify-between sm:px-4">
             <div>
-              <h3 className="text-sm font-semibold">{formatCurrency(selectedDay.revenue)}</h3>
-              <p className="text-xs text-muted-foreground">Total sales for selected day</p>
+              <h3 className="text-sm font-semibold">{formatCurrency(selectedDayRevenue)}</h3>
+              <p className="text-xs text-muted-foreground">Total for this day</p>
             </div>
             {displaySettings.showMargin ? <Badge variant="outline">Profit {formatCurrency(selectedDayProfit)}</Badge> : null}
           </div>
