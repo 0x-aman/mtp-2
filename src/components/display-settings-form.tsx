@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { updateDisplaySettingsAction } from "@/app/actions/settings";
+import { updateDisplaySettingsAction } from "@/lib/local-actions";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { DisplaySettings } from "@/lib/types";

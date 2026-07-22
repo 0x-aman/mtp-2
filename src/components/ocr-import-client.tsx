@@ -6,7 +6,7 @@ import { ImageUp, Loader2, Save, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 
 import { extractProductFromImageAction } from "@/app/actions/imports";
-import { createProductAction, uploadProductImageAction } from "@/app/actions/products";
+import { createProductAction, uploadProductImageAction } from "@/lib/local-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { FileText } from "lucide-react";
 
 import { logoutAction } from "@/app/actions/auth";
+import { LocalSettingsCards } from "@/components/local-settings-cards";
 import { PageHeader } from "@/components/page-header";
-import { SettingsCards } from "@/components/settings-cards";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -37,7 +37,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <SettingsCards />
+      <LocalSettingsCards />
     </>
   );
 }

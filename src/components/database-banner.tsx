@@ -9,9 +9,9 @@ export function DatabaseBanner({ ready, error }: { ready: boolean; error?: strin
     <div className="mb-3 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 sm:mb-4 sm:text-sm dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
       <AlertTriangle className="mt-0.5 size-4 shrink-0" />
       <div>
-        <p className="font-medium">Showing demo data until the local database is connected.</p>
+        <p className="font-medium">Using browser storage for fast local-first data.</p>
         <p className="mt-0.5 break-words text-amber-800 dark:text-amber-300">
-          Set `DATABASE_URL` to the SQLite file, run the Prisma migration, then refresh. {error ? `Last database error: ${error}` : null}
+          Browser storage is the live database. Set `DATABASE_URL` to Postgres only for cloud snapshots. {error ? `Last database error: ${error}` : null}
         </p>
       </div>
     </div>

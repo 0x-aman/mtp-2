@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   createProductAction,
   updateProductAction
-} from "@/app/actions/products";
+} from "@/lib/local-actions";
 import { OptionSelectInput } from "@/components/option-select-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

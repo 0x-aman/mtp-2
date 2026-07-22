@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { closeRentalAction, createRentalAction } from "@/app/actions/rentals";
+import { closeRentalAction, createRentalAction } from "@/lib/local-actions";
 import { ProductIcon } from "@/components/product-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { CalendarDays, IndianRupee, Loader2, Minus, Pencil, Plus, ReceiptText, Settings2, Trash2, TrendingUp, WandSparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { createSaleAction, deleteSaleAction, updateSaleAction } from "@/app/actions/sales";
+import { createSaleAction, deleteSaleAction, updateSaleAction } from "@/lib/local-actions";
 import { ProductSalePicker } from "@/components/product-sale-picker";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";

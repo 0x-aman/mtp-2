@@ -2,8 +2,8 @@ import Link from "next/link";
 import { FileText, ReceiptText } from "lucide-react";
 
 import { logoutAction } from "@/app/actions/auth";
+import { LocalSettingsCards } from "@/components/local-settings-cards";
 import { PageHeader } from "@/components/page-header";
-import { SettingsCards } from "@/components/settings-cards";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -52,7 +52,7 @@ export default async function MorePage() {
 
         <section className="grid gap-3">
           <h2 className="text-base font-semibold">Settings</h2>
-          <SettingsCards />
+          <LocalSettingsCards />
         </section>
       </div>
     </>

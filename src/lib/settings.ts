@@ -1,16 +1,8 @@
 import { prisma } from "@/lib/db";
-import type { DisplaySettings, ShopDetails } from "@/lib/types";
+import { defaultDisplaySettings, shopDetails } from "@/lib/app-config";
+import type { DisplaySettings } from "@/lib/types";
 
-export const defaultDisplaySettings: DisplaySettings = {
-  showCostPrice: true,
-  showMargin: true
-};
-
-export const shopDetails: ShopDetails = {
-  name: "Mahalakshmi Power Tools",
-  address: "Hayatnagar Bus Stand, opposite to Srinivasa Hospital, Veerabhadra Colony",
-  contact: "8309-024-275"
-};
+export { defaultDisplaySettings, shopDetails };
 
 export async function getDisplaySettings(): Promise<DisplaySettings> {
   try {

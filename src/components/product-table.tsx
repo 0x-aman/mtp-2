@@ -29,7 +29,7 @@ import {
   bulkDeleteProductsAction,
   bulkStockUpdateAction,
   deleteProductAction
-} from "@/app/actions/products";
+} from "@/lib/local-actions";
 import { EmptyState } from "@/components/empty-state";
 import { ProductIcon } from "@/components/product-icon";
 import { StockBadge } from "@/components/stock-badge";
