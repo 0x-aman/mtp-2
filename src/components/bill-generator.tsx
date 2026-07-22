@@ -152,89 +152,103 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
         </CardContent>
       </Card>
 
-      <Card className="print-area overflow-hidden">
+      <Card className="print-area bill-paper overflow-hidden">
         <CardContent className="p-0">
-          <div className="border-b bg-muted/30 px-5 py-3 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cash Bill</p>
-            <h2 className="text-2xl font-bold uppercase">{shop.name}</h2>
-            <p className="mx-auto mt-1 max-w-2xl text-sm text-muted-foreground">{shop.address}</p>
-            <p className="text-sm font-medium">Contact: {shop.contact}</p>
-          </div>
-
-          <div className="grid border-b text-sm sm:grid-cols-2">
-            <div className="grid gap-1 border-b p-4 sm:border-b-0 sm:border-r">
-              <p>
-                <span className="font-medium">Bill No:</span> {billNumber}
-              </p>
-              <p>
-                <span className="font-medium">Date:</span> {todayLabel()}
-              </p>
+          <div className="bill-header">
+            <div className="bill-header-mark">
+              <FileText className="size-5" />
             </div>
-            <div className="grid gap-1 p-4">
-              <p>
-                <span className="font-medium">Customer:</span> {customer || "Walk-in"}
-              </p>
-              <p>
-                <span className="font-medium">Phone:</span> {phone || "-"}
-              </p>
+            <div className="min-w-0 flex-1">
+              <p className="bill-kicker">Cash Bill</p>
+              <h2 className="bill-shop-name">{shop.name}</h2>
+              <p className="bill-shop-address">{shop.address}</p>
+            </div>
+            <div className="bill-contact">
+              <span>Contact</span>
+              <strong>{shop.contact}</strong>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[620px] border-collapse text-sm">
-              <thead>
-                <tr className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-                  <th className="w-12 border px-2 py-2 text-center font-medium">#</th>
-                  <th className="border px-2 py-2 font-medium">Description</th>
-                  <th className="w-28 border px-2 py-2 font-medium">SKU</th>
-                  <th className="w-20 border px-2 py-2 text-center font-medium">Qty</th>
-                  <th className="w-28 border px-2 py-2 text-right font-medium">Rate</th>
-                  <th className="w-32 border px-2 py-2 text-right font-medium">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map((line, index) => (
-                  <tr key={line.key} className="border-b last:border-0">
-                    <td className="border px-2 py-2 text-center">{index + 1}</td>
-                    <td className="border px-2 py-2">
-                      <p className="font-medium">{line.title}</p>
-                    </td>
-                    <td className="border px-2 py-2 text-xs text-muted-foreground">{line.sku}</td>
-                    <td className="border px-2 py-2 text-center">{line.quantity}</td>
-                    <td className="border px-2 py-2 text-right">{formatCurrency(line.unitPrice)}</td>
-                    <td className="border px-2 py-2 text-right font-medium">{formatCurrency(line.quantity * line.unitPrice)}</td>
-                  </tr>
-                ))}
-                {!lines.length ? (
+          <div className="bill-body">
+            <div className="bill-meta-grid">
+              <div className="bill-meta-card">
+                <span>Bill No</span>
+                <strong>{billNumber}</strong>
+              </div>
+              <div className="bill-meta-card">
+                <span>Date</span>
+                <strong>{todayLabel()}</strong>
+              </div>
+              <div className="bill-meta-card">
+                <span>Customer</span>
+                <strong>{customer || "Walk-in"}</strong>
+              </div>
+              <div className="bill-meta-card">
+                <span>Phone</span>
+                <strong>{phone || "-"}</strong>
+              </div>
+            </div>
+
+            <div className="bill-table-wrap">
+              <table className="bill-table">
+                <thead>
                   <tr>
-                    <td colSpan={6} className="border px-2 py-10 text-center text-muted-foreground">
-                      No items added.
-                    </td>
+                    <th className="bill-col-index">#</th>
+                    <th>Description</th>
+                    <th className="bill-col-sku">SKU</th>
+                    <th className="bill-col-qty">Qty</th>
+                    <th className="bill-col-money">Rate</th>
+                    <th className="bill-col-money">Amount</th>
                   </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="grid border-b sm:grid-cols-[1fr_18rem]">
-            <div className="min-h-24 border-b p-4 text-sm text-muted-foreground sm:border-b-0 sm:border-r">
-              Goods once sold will not be taken back without bill.
+                </thead>
+                <tbody>
+                  {lines.map((line, index) => (
+                    <tr key={line.key}>
+                      <td className="bill-col-index">{index + 1}</td>
+                      <td>
+                        <p className="bill-item-title">{line.title}</p>
+                      </td>
+                      <td className="bill-col-sku">{line.sku}</td>
+                      <td className="bill-col-qty">{line.quantity}</td>
+                      <td className="bill-col-money">{formatCurrency(line.unitPrice)}</td>
+                      <td className="bill-col-money bill-line-total">{formatCurrency(line.quantity * line.unitPrice)}</td>
+                    </tr>
+                  ))}
+                  {!lines.length ? (
+                    <tr>
+                      <td colSpan={6} className="bill-empty-row">
+                        No items added.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
             </div>
-            <div className="grid text-sm">
-              <div className="grid grid-cols-2 border-b">
-                <span className="border-r px-3 py-2 font-medium">Subtotal</span>
-                <span className="px-3 py-2 text-right">{formatCurrency(total)}</span>
+
+            <div className="bill-lower-grid">
+              <div className="bill-note">
+                <span>Terms</span>
+                <p>Goods once sold will not be taken back without bill.</p>
               </div>
-              <div className="grid grid-cols-2">
-                <span className="border-r px-3 py-3 text-base font-bold">Grand Total</span>
-                <span className="px-3 py-3 text-right text-xl font-bold">{formatCurrency(total)}</span>
+              <div className="bill-total-box">
+                <div className="bill-total-row">
+                  <span>Subtotal</span>
+                  <strong>{formatCurrency(total)}</strong>
+                </div>
+                <div className="bill-grand-row">
+                  <span>Grand Total</span>
+                  <strong>{formatCurrency(total)}</strong>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid gap-8 px-5 py-5 text-sm sm:grid-cols-2">
-            <p className="text-muted-foreground">Thank you for your business.</p>
-            <p className="text-right font-medium">Authorized Signature</p>
+            <div className="bill-footer">
+              <p>Thank you for your business.</p>
+              <div className="bill-signature">
+                <span />
+                <strong>Authorized Signature</strong>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
