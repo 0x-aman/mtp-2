@@ -51,6 +51,15 @@ export type LocalBackupStatus = {
   lastBackupError: string | null;
 };
 
+function snapshotHasBusinessData(snapshot: LocalSnapshot) {
+  return Boolean(
+    snapshot.products.length ||
+      snapshot.sales.length ||
+      snapshot.rentals.length ||
+      snapshot.activity.length
+  );
+}
+
 class MptLocalDb extends Dexie {
   products!: Table<ProductRecord, string>;
   sales!: Table<SaleRecord, string>;
@@ -360,25 +369,7 @@ async function requestPersistentStorage() {
   }
 }
 
-async function hasLocalBusinessData() {
-  const db = getLocalDb();
-  const [products, sales, rentals] = await Promise.all([db.products.count(), db.sales.count(), db.rentals.count()]);
-
-  return products + sales + rentals > 0;
-}
-
-async function bootstrapFromServerIfEmpty() {
-  if (await hasLocalBusinessData()) {
-    return;
-  }
-
-  const lastAttempt = await getMetaValue<string>("lastBootstrapAttemptAt");
-  if (lastAttempt && Date.now() - new Date(lastAttempt).getTime() < 1000 * 60 * 60) {
-    return;
-  }
-
-  await setMetaValue("lastBootstrapAttemptAt", nowIso());
-
+export async function importServerDatabaseSnapshot() {
   try {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 8000);
@@ -389,17 +380,22 @@ async function bootstrapFromServerIfEmpty() {
     window.clearTimeout(timeout);
 
     if (!response.ok) {
-      return;
+      const body = (await response.json().catch(() => null)) as { message?: string } | null;
+      throw new Error(body?.message ?? "Server database import is unavailable.");
     }
 
     const body = (await response.json()) as { ok?: boolean; snapshot?: LocalSnapshot };
 
-    if (body.ok && body.snapshot) {
-      await importLocalSnapshot(body.snapshot, { notify: false, preserveDeviceId: true });
-      await setMetaValue("lastBootstrapCompletedAt", nowIso());
+    if (!body.ok || !body.snapshot) {
+      throw new Error("Server database import is unavailable.");
     }
-  } catch {
-    // Server bootstrap is optional. IndexedDB remains the primary store.
+
+    await importLocalSnapshot(body.snapshot, { preserveDeviceId: true });
+    await setMetaValue("lastBootstrapCompletedAt", nowIso());
+
+    return body.snapshot;
+  } catch (error) {
+    throw error instanceof Error ? error : new Error("Server database import failed.");
   }
 }
 
@@ -410,7 +406,6 @@ export async function initializeLocalDb() {
   await getLocalDisplaySettings();
   const persistent = await requestPersistentStorage();
   await setMetaValue("persistentStorage", persistent);
-  await bootstrapFromServerIfEmpty();
 
   return {
     persistent
@@ -596,6 +591,13 @@ async function hashText(text: string) {
 
 export async function syncLocalSnapshotToServer(reason = "manual") {
   const snapshot = await exportLocalSnapshot();
+
+  if (!snapshotHasBusinessData(snapshot)) {
+    await setMetaValue("lastBackupError", null);
+
+    return true;
+  }
+
   const serialized = JSON.stringify(snapshot);
   const dataHash = await hashText(serialized);
 

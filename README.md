@@ -32,3 +32,4 @@ The app is PIN-protected and has no user registration, roles, or multi-user auth
 - Postgres is used for optional cloud snapshots and one-time bootstrap from existing server data.
 - If Postgres is unavailable, the app remains usable; only cloud backup/restore is affected.
 - Use Settings -> Backup and Restore to sync now, export a JSON backup, restore a JSON backup, or restore the latest cloud snapshot.
+- The PIN session defaults to one year. Set `SESSION_MAX_AGE_SECONDS` lower only if you want the portal to ask again sooner.

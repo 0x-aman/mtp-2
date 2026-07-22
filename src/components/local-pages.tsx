@@ -1,7 +1,7 @@
 "use client";
 
 import type { DependencyList } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -9,10 +9,12 @@ import {
   ArrowLeft,
   Boxes,
   Clock,
+  CloudDownload,
   Edit,
   FileText,
   FileUp,
   IndianRupee,
+  Loader2,
   Package,
   Plus,
   ReceiptText,
@@ -48,7 +50,8 @@ import {
   getLocalProductById,
   getLocalProductFormOptions,
   getLocalRentalDataset,
-  getLocalSalesDataset
+  getLocalSalesDataset,
+  importServerDatabaseSnapshot
 } from "@/lib/local-db";
 import type {
   DisplaySettings,
@@ -59,6 +62,7 @@ import type {
   SalesDataset
 } from "@/lib/types";
 import { cn, compactDate, formatCurrency, formatNumber } from "@/lib/utils";
+import { toast } from "sonner";
 
 type LocalState<T> = {
   data: T | null;
@@ -151,6 +155,55 @@ function ProductNotFound() {
   );
 }
 
+function LocalEmptyBrowserPrompt() {
+  const [isPending, startTransition] = useTransition();
+
+  const importServerData = () => {
+    startTransition(async () => {
+      try {
+        const snapshot = await importServerDatabaseSnapshot();
+        const totalRecords =
+          snapshot.products.length + snapshot.sales.length + snapshot.rentals.length + snapshot.activity.length;
+
+        if (totalRecords) {
+          toast.success(
+            `Imported ${snapshot.products.length} products, ${snapshot.sales.length} sales, and ${snapshot.rentals.length} rentals.`
+          );
+        } else {
+          toast.info("Server database has no records to import.");
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Server database import failed.");
+      }
+    });
+  };
+
+  return (
+    <Card>
+      <CardContent className="grid gap-4 p-5 text-center">
+        <div>
+          <p className="font-semibold">This browser database is empty</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Import existing products, sales, rentals, and logs from the server database, or start fresh on this device.
+          </p>
+        </div>
+        <div className="grid gap-2 sm:mx-auto sm:grid-cols-2">
+          <Button type="button" onClick={importServerData} disabled={isPending}>
+            {isPending ? <Loader2 className="animate-spin" /> : <CloudDownload />}
+            Import Server Data
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/products/new">
+              <Plus />
+              New Product
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function LocalDashboardPage() {
   const { data: dataset, loading, error } = useLocalData<InventoryDataset>(() => getLocalInventoryDataset());
 
@@ -222,7 +275,11 @@ export function LocalDashboardPage() {
             </Button>
           </div>
 
-          <ProductTable products={dataset.products} databaseReady displaySettings={dataset.displaySettings} />
+          {dataset.products.length ? (
+            <ProductTable products={dataset.products} databaseReady displaySettings={dataset.displaySettings} />
+          ) : (
+            <LocalEmptyBrowserPrompt />
+          )}
         </>
       )}
     </>
