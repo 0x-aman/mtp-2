@@ -2,7 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, IndianRupee, Loader2, Minus, Pencil, Plus, ReceiptText, Settings2, Trash2, TrendingUp, WandSparkles, X } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  IndianRupee,
+  Loader2,
+  Minus,
+  Pencil,
+  Plus,
+  ReceiptText,
+  Settings2,
+  Trash2,
+  TrendingUp,
+  WandSparkles,
+  X
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { createSaleAction, deleteSaleAction, updateSaleAction } from "@/lib/local-actions";
@@ -71,10 +85,6 @@ function addCalendarDays(value: Date, days: number) {
   date.setDate(date.getDate() + days);
 
   return date;
-}
-
-function sameCalendarDate(a: string, b: string) {
-  return dateInputValueFromDate(new Date(a)) === b;
 }
 
 function dateKey(value: string) {
@@ -213,21 +223,6 @@ function sortSales(sales: SaleRecord[]) {
 
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
-}
-
-function salesDayLabel(value: string) {
-  const todayValue = todayInputValue();
-  const date = localDateFromInput(value);
-
-  if (value === todayValue) {
-    return "Today";
-  }
-
-  if (value === dateInputValueFromDate(addCalendarDays(startOfToday(), 1))) {
-    return "Tomorrow";
-  }
-
-  return dateKey(date.toISOString());
 }
 
 function draftToSaleRecord({
@@ -598,6 +593,7 @@ export function SalesManager({
   const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
   const [deletingSaleId, setDeletingSaleId] = useState<string | null>(null);
   const [syncingSaleIds, setSyncingSaleIds] = useState<string[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -658,15 +654,25 @@ export function SalesManager({
     return rankedProducts(productsForDraft, productQuery, 6);
   }, [bulkCursor, bulkText, productsForDraft]);
   const dayOptions = useMemo(() => weekDayOptions(visibleSales), [visibleSales]);
-  const selectedDaySales = useMemo(
-    () => sortSales(visibleSales.filter((sale) => sameCalendarDate(sale.saleDate, saleDate))),
-    [saleDate, visibleSales]
-  );
-  const selectedDayLabel = salesDayLabel(saleDate);
-  const selectedDayDateLabel = new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short" }).format(localDateFromInput(saleDate));
-  const selectedDayRevenue = selectedDaySales.reduce((total, sale) => total + sale.subtotal, 0);
-  const selectedDayItems = selectedDaySales.reduce((total, sale) => total + saleItemCount(sale), 0);
-  const selectedDayProfit = selectedDaySales.reduce((total, sale) => total + sale.grossProfit, 0);
+  const allSales = useMemo(() => sortSales(visibleSales), [visibleSales]);
+  const allSalesRevenue = allSales.reduce((total, sale) => total + sale.subtotal, 0);
+  const allSalesItems = allSales.reduce((total, sale) => total + saleItemCount(sale), 0);
+  const allSalesProfit = allSales.reduce((total, sale) => total + sale.grossProfit, 0);
+  const allSalesDateRange = useMemo(() => {
+    if (!allSales.length) {
+      return "No sales yet";
+    }
+
+    const dates = allSales.map((sale) => new Date(sale.saleDate).getTime());
+    const oldest = new Date(Math.min(...dates)).toISOString();
+    const newest = new Date(Math.max(...dates)).toISOString();
+
+    if (dateInputValueFromDate(new Date(oldest)) === dateInputValueFromDate(new Date(newest))) {
+      return dateKey(newest);
+    }
+
+    return `${dateKey(oldest)} - ${dateKey(newest)}`;
+  }, [allSales]);
 
   const pickProduct = (product: ProductRecord) => {
     setSelectedProduct(product);
@@ -1304,39 +1310,53 @@ export function SalesManager({
       <section className="grid gap-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold">{selectedDayLabel} Sales</h2>
-            <p className="text-xs text-muted-foreground">{selectedDayDateLabel}</p>
+            <h2 className="text-base font-semibold">All Sales</h2>
+            <p className="text-xs text-muted-foreground">{allSalesDateRange}</p>
           </div>
-          <div className="text-right text-xs text-muted-foreground">
-            <p>{selectedDaySales.length} logs</p>
-            <p>{selectedDayItems} items</p>
-          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => setHistoryOpen((open) => !open)}>
+            <ChevronDown className={cn("transition-transform", historyOpen && "rotate-180")} />
+            {historyOpen ? "Hide History" : "Show History"}
+          </Button>
         </div>
 
         <div className="overflow-hidden rounded-lg border bg-card">
-          <div className="grid gap-2 border-b bg-muted/45 px-3 py-3 sm:flex sm:items-center sm:justify-between sm:px-4">
-            <div>
-              <h3 className="text-sm font-semibold">{formatCurrency(selectedDayRevenue)}</h3>
-              <p className="text-xs text-muted-foreground">Total for this day</p>
+          <div className="grid gap-3 border-b bg-muted/45 px-3 py-3 sm:px-4">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Revenue</p>
+                <h3 className="text-base font-semibold">{formatCurrency(allSalesRevenue)}</h3>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Logs</p>
+                <h3 className="text-base font-semibold">{allSales.length}</h3>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Items</p>
+                <h3 className="text-base font-semibold">{allSalesItems}</h3>
+              </div>
             </div>
-            {displaySettings.showMargin ? <Badge variant="outline">Profit {formatCurrency(selectedDayProfit)}</Badge> : null}
+            {displaySettings.showMargin ? <Badge variant="outline">Total profit {formatCurrency(allSalesProfit)}</Badge> : null}
           </div>
-          {selectedDaySales.length ? (
-            <div className="grid">
-              {selectedDaySales.map((sale) => (
-                <SalesLogCard
-                  key={sale.id}
-                  sale={sale}
-                  showMargin={displaySettings.showMargin}
-                  onEdit={startEditSale}
-                  onDelete={deleteSale}
-                  isDeleting={deletingSaleId === sale.id}
-                  isSyncing={syncingSaleIds.includes(sale.id)}
-                />
-              ))}
-            </div>
+          {historyOpen ? (
+            allSales.length ? (
+              <div className="grid">
+                {allSales.map((sale) => (
+                  <SalesLogCard
+                    key={sale.id}
+                    sale={sale}
+                    showMargin={displaySettings.showMargin}
+                    onEdit={startEditSale}
+                    onDelete={deleteSale}
+                    isDeleting={deletingSaleId === sale.id}
+                    isSyncing={syncingSaleIds.includes(sale.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">No sales logged yet.</div>
+            )
           ) : (
-            <div className="px-4 py-8 text-center text-sm text-muted-foreground">No sales logged for this day.</div>
+            <div className="px-4 py-3 text-sm text-muted-foreground">History is hidden. Open it when you need the full sale log.</div>
           )}
         </div>
       </section>
