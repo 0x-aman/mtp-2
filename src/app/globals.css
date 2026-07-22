@@ -155,7 +155,7 @@
 
 .bill-table-wrap {
   margin-top: 0.55rem;
-  min-height: 17rem;
+  min-height: 20rem;
   overflow-x: auto;
   border: 1px solid #555;
   border-radius: 0;
@@ -203,6 +203,11 @@
 
 .bill-table tbody tr:last-child td {
   border-bottom: 0;
+}
+
+.bill-materials-space td {
+  height: 13rem;
+  padding: 0;
 }
 
 .bill-item-title {
@@ -255,6 +260,10 @@
 .bill-note p {
   font-size: 0.82rem;
   line-height: 1.35;
+}
+
+.bill-note strong {
+  font-weight: 600;
 }
 
 .bill-total-box {
@@ -463,7 +472,7 @@
   }
 
   .bill-table-wrap {
-    min-height: 68mm;
+    min-height: 82mm;
     overflow: visible;
   }
 
@@ -479,6 +488,11 @@
 
   .bill-table td {
     padding: 1.5mm 2mm;
+  }
+
+  .bill-materials-space td {
+    height: 58mm;
+    padding: 0;
   }
 
   .bill-lower-grid {

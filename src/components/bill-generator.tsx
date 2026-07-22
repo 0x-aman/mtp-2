@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import type { ProductRecord, ShopDetails } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -35,6 +36,7 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
   const [unitPrice, setUnitPrice] = useState(0);
   const [customer, setCustomer] = useState("");
   const [phone, setPhone] = useState("");
+  const [showStamp, setShowStamp] = useState(true);
   const [lines, setLines] = useState<BillLine[]>([]);
   const billNumber = `MPT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`;
   const total = lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
@@ -144,10 +146,16 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
               <p className="text-sm text-muted-foreground">Bill total</p>
               <p className="text-2xl font-semibold">{formatCurrency(total)}</p>
             </div>
-            <Button type="button" disabled={!lines.length} onClick={() => window.print()}>
-              <Printer />
-              Export PDF
-            </Button>
+            <div className="flex flex-col gap-2 sm:items-end">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Switch id="billShowStamp" checked={showStamp} onCheckedChange={setShowStamp} />
+                <Label htmlFor="billShowStamp">Show stamp</Label>
+              </div>
+              <Button type="button" disabled={!lines.length} onClick={() => window.print()}>
+                <Printer />
+                Export PDF
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -181,7 +189,7 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
                   <thead>
                     <tr>
                       <th className="bill-col-index">#</th>
-                      <th>Particulars (Descriptions & Specifications)</th>
+                      <th>Item Description</th>
                       <th className="bill-col-qty">Qty</th>
                       <th className="bill-col-money">Rate</th>
                       <th className="bill-col-money">Amount</th>
@@ -199,6 +207,15 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
                         <td className="bill-col-money bill-line-total">{formatCurrency(line.quantity * line.unitPrice)}</td>
                       </tr>
                     ))}
+                    {lines.length ? (
+                      <tr className="bill-materials-space" aria-hidden="true">
+                        <td />
+                        <td />
+                        <td />
+                        <td />
+                        <td />
+                      </tr>
+                    ) : null}
                     {!lines.length ? (
                       <tr>
                         <td colSpan={5} className="bill-empty-row">
@@ -212,7 +229,9 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
 
               <div className="bill-lower-grid">
                 <div className="bill-note">
-                  <p>no return, no exchange, no warranty</p>
+                  <p>
+                    <strong>Terms: No returns, exchanges, or warranty.</strong>
+                  </p>
                 </div>
                 <div className="bill-total-box">
                   <div className="bill-total-row">
@@ -226,14 +245,16 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
                 </div>
               </div>
 
-              <div className="bill-footer">
-                <div className="bill-stamp" aria-label={`${shop.name} stamp`}>
-                  <strong>{shop.name}</strong>
-                  <span>{shop.address}</span>
-                  <span>Phone: {shop.contact}</span>
-                  <em>{todayLabel()}</em>
+              {showStamp ? (
+                <div className="bill-footer">
+                  <div className="bill-stamp" aria-label={`${shop.name} stamp`}>
+                    <strong>{shop.name}</strong>
+                    <span>{shop.address}</span>
+                    <span>Phone: {shop.contact}</span>
+                    <em>{todayLabel()}</em>
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           </CardContent>
         </Card>
