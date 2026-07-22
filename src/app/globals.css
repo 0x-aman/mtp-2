@@ -402,8 +402,8 @@
   .print-area {
     position: absolute;
     top: 0;
-    left: 0;
-    width: 100%;
+    left: 10%;
+    width: 80%;
     border: 1px solid #333 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
