@@ -26,7 +26,7 @@ export async function GET() {
 
     const snapshot = await prisma.backupSnapshot.findFirst({
       orderBy: {
-        createdAt: "desc"
+        updatedAt: "desc"
       }
     });
 
@@ -44,7 +44,11 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      snapshot: JSON.parse(snapshot.data)
+      snapshot: JSON.parse(snapshot.data),
+      dataHash: snapshot.dataHash,
+      deviceId: snapshot.deviceId,
+      snapshotDate: snapshot.snapshotDate,
+      updatedAt: snapshot.updatedAt.toISOString()
     });
   } catch (error) {
     return NextResponse.json(

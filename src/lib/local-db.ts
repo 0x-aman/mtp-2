@@ -51,6 +51,23 @@ export type LocalBackupStatus = {
   lastBackupError: string | null;
 };
 
+export type CloudSnapshotUpdate = {
+  snapshot: LocalSnapshot;
+  contentHash: string;
+  localContentHash: string;
+  deviceId: string;
+  exportedAt: string;
+  updatedAt: string | null;
+};
+
+type LatestCloudSnapshotResponse = {
+  ok?: boolean;
+  snapshot?: LocalSnapshot;
+  dataHash?: string;
+  deviceId?: string;
+  updatedAt?: string;
+};
+
 function snapshotHasBusinessData(snapshot: LocalSnapshot) {
   return Boolean(
     snapshot.products.length ||
@@ -589,6 +606,98 @@ async function hashText(text: string) {
     .join("");
 }
 
+async function hashSnapshotContent(snapshot: LocalSnapshot) {
+  return hashText(
+    JSON.stringify({
+      version: snapshot.version,
+      products: snapshot.products,
+      sales: snapshot.sales,
+      rentals: snapshot.rentals,
+      activity: snapshot.activity,
+      settings: snapshot.settings
+    })
+  );
+}
+
+async function shouldSkipAutoBackupForIgnoredCloudUpdate(reason: string, localContentHash: string) {
+  if (!["app-open", "interval", "leaving"].includes(reason)) {
+    return false;
+  }
+
+  const [ignoredRemoteHash, ignoredLocalHash] = await Promise.all([
+    getMetaValue<string>("ignoredCloudSnapshotHash"),
+    getMetaValue<string>("ignoredCloudSnapshotLocalHash")
+  ]);
+
+  return Boolean(ignoredRemoteHash && ignoredLocalHash === localContentHash);
+}
+
+export async function getLatestCloudSnapshotUpdate(): Promise<CloudSnapshotUpdate | null> {
+  await initializeLocalDb();
+
+  try {
+    const response = await fetch("/api/snapshots/latest", {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const body = (await response.json()) as LatestCloudSnapshotResponse;
+
+    if (!body.ok || !body.snapshot) {
+      return null;
+    }
+
+    const [localSnapshot, localDeviceId] = await Promise.all([exportLocalSnapshot(), getLocalDeviceId()]);
+    const [localContentHash, cloudContentHash] = await Promise.all([
+      hashSnapshotContent(localSnapshot),
+      hashSnapshotContent(body.snapshot)
+    ]);
+    const cloudDeviceId = body.deviceId ?? body.snapshot.deviceId;
+
+    if (cloudDeviceId === localDeviceId || cloudContentHash === localContentHash) {
+      await setMetaValue("lastSeenCloudSnapshotHash", cloudContentHash);
+      return null;
+    }
+
+    const ignoredCloudHash = await getMetaValue<string>("ignoredCloudSnapshotHash");
+
+    if (ignoredCloudHash === cloudContentHash) {
+      return null;
+    }
+
+    return {
+      snapshot: body.snapshot,
+      contentHash: cloudContentHash,
+      localContentHash,
+      deviceId: cloudDeviceId,
+      exportedAt: body.snapshot.exportedAt,
+      updatedAt: body.updatedAt ?? null
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function importCloudSnapshotUpdate(update: CloudSnapshotUpdate) {
+  await importLocalSnapshot(update.snapshot, { preserveDeviceId: true });
+  await Promise.all([
+    setMetaValue("lastImportedCloudSnapshotHash", update.contentHash),
+    setMetaValue("lastSeenCloudSnapshotHash", update.contentHash),
+    setMetaValue("ignoredCloudSnapshotHash", null),
+    setMetaValue("ignoredCloudSnapshotLocalHash", null)
+  ]);
+}
+
+export async function ignoreCloudSnapshotUpdate(update: CloudSnapshotUpdate) {
+  await Promise.all([
+    setMetaValue("ignoredCloudSnapshotHash", update.contentHash),
+    setMetaValue("ignoredCloudSnapshotLocalHash", update.localContentHash)
+  ]);
+}
+
 export async function syncLocalSnapshotToServer(reason = "manual") {
   const snapshot = await exportLocalSnapshot();
 
@@ -599,7 +708,11 @@ export async function syncLocalSnapshotToServer(reason = "manual") {
   }
 
   const serialized = JSON.stringify(snapshot);
-  const dataHash = await hashText(serialized);
+  const dataHash = await hashSnapshotContent(snapshot);
+
+  if (await shouldSkipAutoBackupForIgnoredCloudUpdate(reason, dataHash)) {
+    return true;
+  }
 
   try {
     const response = await fetch("/api/snapshots", {

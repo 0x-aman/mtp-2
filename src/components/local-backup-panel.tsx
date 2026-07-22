@@ -103,7 +103,7 @@ export function LocalBackupPanel() {
           throw new Error("No cloud backup is available.");
         }
 
-        await importLocalSnapshot(body.snapshot);
+        await importLocalSnapshot(body.snapshot, { preserveDeviceId: true });
         refreshStatus();
         notifyLocalDataChanged();
         toast.success("Latest cloud backup restored.");
