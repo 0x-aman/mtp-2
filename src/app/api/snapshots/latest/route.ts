@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { ensureBackupSnapshotTable, snapshotTableErrorMessage } from "@/lib/backup-snapshot-table";
 import { prisma } from "@/lib/db";
 import { getPostgresConfigError } from "@/lib/server-db-config";
 
@@ -21,6 +22,8 @@ export async function GET() {
   }
 
   try {
+    await ensureBackupSnapshotTable();
+
     const snapshot = await prisma.backupSnapshot.findFirst({
       orderBy: {
         createdAt: "desc"
@@ -47,7 +50,7 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : "Cloud restore failed."
+        message: snapshotTableErrorMessage(error)
       },
       {
         status: 503

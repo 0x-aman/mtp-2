@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { ensureBackupSnapshotTable, snapshotTableErrorMessage } from "@/lib/backup-snapshot-table";
 import { prisma } from "@/lib/db";
 import { getPostgresConfigError } from "@/lib/server-db-config";
 
@@ -43,6 +44,8 @@ export async function POST(request: Request) {
       );
     }
 
+    await ensureBackupSnapshotTable();
+
     await prisma.backupSnapshot.upsert({
       where: {
         deviceId_snapshotDate: {
@@ -71,7 +74,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : "Backup failed."
+        message: snapshotTableErrorMessage(error)
       },
       {
         status: 503
