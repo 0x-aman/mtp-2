@@ -154,39 +154,61 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
 
       <Card className="print-area bill-paper overflow-hidden">
         <CardContent className="p-0">
+          <div className="bill-topline" />
           <div className="bill-header">
-            <div className="bill-header-mark">
-              <FileText className="size-5" />
+            <div className="bill-brand-block">
+              <div className="bill-header-mark">
+                <FileText className="size-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="bill-kicker">Mahalaxmi Power Tools</p>
+                <h2 className="bill-shop-name">{shop.name}</h2>
+                <p className="bill-shop-address">{shop.address}</p>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="bill-kicker">Cash Bill</p>
-              <h2 className="bill-shop-name">{shop.name}</h2>
-              <p className="bill-shop-address">{shop.address}</p>
-            </div>
-            <div className="bill-contact">
-              <span>Contact</span>
-              <strong>{shop.contact}</strong>
+            <div className="bill-document-panel">
+              <p className="bill-document-title">Invoice</p>
+              <div>
+                <span>Bill No</span>
+                <strong>{billNumber}</strong>
+              </div>
+              <div>
+                <span>Issued</span>
+                <strong>{todayLabel()}</strong>
+              </div>
             </div>
           </div>
 
           <div className="bill-body">
-            <div className="bill-meta-grid">
-              <div className="bill-meta-card">
-                <span>Bill No</span>
-                <strong>{billNumber}</strong>
+            <div className="bill-party-grid">
+              <section className="bill-party-card bill-party-primary">
+                <span>Billed To</span>
+                <strong>{customer || "Walk-in Customer"}</strong>
+                <p>{phone ? `Phone: ${phone}` : "Customer phone not provided"}</p>
+              </section>
+              <section className="bill-party-card">
+                <span>Issued By</span>
+                <strong>{shop.name}</strong>
+                <p>Contact: {shop.contact}</p>
+              </section>
+              <section className="bill-party-card">
+                <span>Payment Terms</span>
+                <strong>Due on receipt</strong>
+                <p>Cash bill generated for retail purchase.</p>
+              </section>
+              <section className="bill-party-card">
+                <span>Document Type</span>
+                <strong>Original Copy</strong>
+                <p>Keep this bill for service or exchange reference.</p>
+              </section>
+            </div>
+
+            <div className="bill-section-heading">
+              <div>
+                <span>Line Items</span>
+                <strong>{lines.length ? `${lines.length} item${lines.length === 1 ? "" : "s"}` : "No items"}</strong>
               </div>
-              <div className="bill-meta-card">
-                <span>Date</span>
-                <strong>{todayLabel()}</strong>
-              </div>
-              <div className="bill-meta-card">
-                <span>Customer</span>
-                <strong>{customer || "Walk-in"}</strong>
-              </div>
-              <div className="bill-meta-card">
-                <span>Phone</span>
-                <strong>{phone || "-"}</strong>
-              </div>
+              <p>Prices are shown in INR.</p>
             </div>
 
             <div className="bill-table-wrap">
@@ -235,8 +257,12 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
                   <span>Subtotal</span>
                   <strong>{formatCurrency(total)}</strong>
                 </div>
+                <div className="bill-total-row">
+                  <span>Adjustments</span>
+                  <strong>{formatCurrency(0)}</strong>
+                </div>
                 <div className="bill-grand-row">
-                  <span>Grand Total</span>
+                  <span>Amount Payable</span>
                   <strong>{formatCurrency(total)}</strong>
                 </div>
               </div>
