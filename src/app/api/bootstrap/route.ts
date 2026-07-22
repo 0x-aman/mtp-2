@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { defaultDisplaySettings } from "@/lib/app-config";
 import { prisma } from "@/lib/db";
+import { getPostgresConfigError } from "@/lib/server-db-config";
 import type { ActivityRecord, DisplaySettings, ProductRecord, RentalRecord, SaleLineRecord, SaleRecord } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -163,6 +164,20 @@ function rentalToRecord(rental: {
 }
 
 export async function GET() {
+  const configError = getPostgresConfigError();
+
+  if (configError) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: configError
+      },
+      {
+        status: 503
+      }
+    );
+  }
+
   try {
     const [products, sales, rentals, activity, settings] = await Promise.all([
       prisma.product.findMany(),
