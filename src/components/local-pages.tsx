@@ -299,7 +299,6 @@ export function LocalSalesPage() {
         <SalesManager
           products={dataset.products}
           sales={dataset.sales}
-          metrics={dataset.metrics}
           displaySettings={dataset.displaySettings}
         />
       )}

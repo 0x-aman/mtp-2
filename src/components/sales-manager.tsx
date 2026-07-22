@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CalendarDays,
   ChevronDown,
-  IndianRupee,
   Loader2,
   Minus,
   Pencil,
@@ -13,7 +11,6 @@ import {
   ReceiptText,
   Settings2,
   Trash2,
-  TrendingUp,
   WandSparkles,
   X
 } from "lucide-react";
@@ -21,7 +18,6 @@ import { toast } from "sonner";
 
 import { createSaleAction, deleteSaleAction, updateSaleAction } from "@/lib/local-actions";
 import { ProductSalePicker } from "@/components/product-sale-picker";
-import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,13 +76,6 @@ function localDateFromInput(value: string) {
   return new Date(`${value}T12:00:00`);
 }
 
-function addCalendarDays(value: Date, days: number) {
-  const date = new Date(value);
-  date.setDate(date.getDate() + days);
-
-  return date;
-}
-
 function dateKey(value: string) {
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
@@ -104,50 +93,6 @@ function formatLogTime(value: string) {
 
 function saleItemCount(sale: SaleRecord) {
   return sale.lines.reduce((total, line) => total + line.quantity, 0);
-}
-
-function weekDayOptions(sales: SaleRecord[]) {
-  const today = startOfToday();
-  const tomorrow = addCalendarDays(today, 1);
-  const weekStart = startOfWeek();
-  const values = Array.from({ length: 7 }, (_, index) => dateInputValueFromDate(addCalendarDays(weekStart, index)));
-  const tomorrowValue = dateInputValueFromDate(tomorrow);
-
-  if (!values.includes(tomorrowValue)) {
-    values.push(tomorrowValue);
-  }
-
-  const todayValue = dateInputValueFromDate(today);
-  const salesByDate = sales.reduce((map, sale) => {
-    const key = dateInputValueFromDate(new Date(sale.saleDate));
-    const current = map.get(key) ?? { logs: 0, revenue: 0, items: 0 };
-
-    current.logs += 1;
-    current.revenue += sale.subtotal;
-    current.items += saleItemCount(sale);
-    map.set(key, current);
-
-    return map;
-  }, new Map<string, { logs: number; revenue: number; items: number }>());
-
-  return values.map((value) => {
-    const date = localDateFromInput(value);
-    const summary = salesByDate.get(value) ?? { logs: 0, revenue: 0, items: 0 };
-    let label = new Intl.DateTimeFormat("en-IN", { weekday: "short" }).format(date);
-
-    if (value === todayValue) {
-      label = "Today";
-    } else if (value === tomorrowValue) {
-      label = "Tomorrow";
-    }
-
-    return {
-      value,
-      label,
-      dateLabel: new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short" }).format(date),
-      ...summary
-    };
-  });
 }
 
 function startOfToday() {
@@ -223,6 +168,60 @@ function sortSales(sales: SaleRecord[]) {
 
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+}
+
+type SalesDayGroup = {
+  key: string;
+  label: string;
+  logs: number;
+  items: number;
+  revenue: number;
+  profit: number;
+  sales: SaleRecord[];
+};
+
+function salesDayGroupLabel(key: string) {
+  const date = localDateFromInput(key);
+  const label = new Intl.DateTimeFormat("en-IN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  }).format(date);
+
+  return key === todayInputValue() ? `Today - ${label}` : label;
+}
+
+function groupSalesByDay(sales: SaleRecord[]) {
+  const groups: SalesDayGroup[] = [];
+  const groupMap = new Map<string, SalesDayGroup>();
+
+  for (const sale of sales) {
+    const key = saleDateInputValue(sale.saleDate);
+    let group = groupMap.get(key);
+
+    if (!group) {
+      group = {
+        key,
+        label: salesDayGroupLabel(key),
+        logs: 0,
+        items: 0,
+        revenue: 0,
+        profit: 0,
+        sales: []
+      };
+      groupMap.set(key, group);
+      groups.push(group);
+    }
+
+    group.logs += 1;
+    group.items += saleItemCount(sale);
+    group.revenue += sale.subtotal;
+    group.profit += sale.grossProfit;
+    group.sales.push(sale);
+  }
+
+  return groups;
 }
 
 function draftToSaleRecord({
@@ -396,6 +395,47 @@ function findBestProduct(products: ProductRecord[], query: string) {
   return rankedProducts(products, query, 1)[0] ?? null;
 }
 
+function bestProductStartsWithNumber(products: ProductRecord[], query: string, quantityText: string) {
+  const product = findBestProduct(products, query);
+
+  if (!product) {
+    return false;
+  }
+
+  const target = normalizeSearch([product.title, product.sku].filter(Boolean).join(" "));
+
+  return target === quantityText || target.startsWith(`${quantityText} `);
+}
+
+function bulkQuantityParts(value: string, products: ProductRecord[]) {
+  const leadingWhitespace = value.match(/^(\s*)/)?.[1] ?? "";
+  const explicitMatch = value.match(/^(\s*(\d+)\s*x\s+)(.+)$/i);
+
+  if (explicitMatch) {
+    return {
+      quantity: Number(explicitMatch[2]),
+      productQuery: explicitMatch[3].trim(),
+      quantityPrefix: explicitMatch[1]
+    };
+  }
+
+  const looseMatch = value.match(/^(\s*(\d+)\s+)(.+)$/);
+
+  if (looseMatch && !bestProductStartsWithNumber(products, value.trim(), looseMatch[2])) {
+    return {
+      quantity: Number(looseMatch[2]),
+      productQuery: looseMatch[3].trim(),
+      quantityPrefix: looseMatch[1]
+    };
+  }
+
+  return {
+    quantity: 1,
+    productQuery: value.trim(),
+    quantityPrefix: leadingWhitespace
+  };
+}
+
 function parseBulkSaleInput(text: string, products: ProductRecord[], existingLines: DraftLine[]): BulkLinePreview[] {
   const reservedQuantities = new Map<string, number>();
 
@@ -412,11 +452,11 @@ function parseBulkSaleInput(text: string, products: ProductRecord[], existingLin
         return null;
       }
 
-      const quantityMatch = trimmed.match(/^(\d+)\s*x\s*/i);
-      const quantity = quantityMatch ? Number(quantityMatch[1]) : 1;
-      const withoutQuantity = trimmed.replace(/^(\d+)\s*x\s*/i, "").trim();
-      const priceMatch = withoutQuantity.match(/@\s*(\d+(?:\.\d+)?)/);
-      const productQuery = withoutQuantity.replace(/@\s*\d+(?:\.\d+)?\s*$/, "").trim();
+      const priceMatch = trimmed.match(/@\s*(\d+(?:\.\d+)?)/);
+      const withoutPrice = trimmed.replace(/@\s*\d+(?:\.\d+)?\s*$/, "").trim();
+      const quantityParts = bulkQuantityParts(withoutPrice, products);
+      const quantity = quantityParts.quantity;
+      const productQuery = quantityParts.productQuery;
       const product = findBestProduct(products, productQuery);
       const usedDefaultPrice = !priceMatch;
       const unitPrice = priceMatch ? Number(priceMatch[1]) : product?.sellingPrice ?? 0;
@@ -472,15 +512,12 @@ function bulkClauseRange(text: string, cursor: number) {
   };
 }
 
-function bulkProductQueryFromClause(clause: string) {
-  return clause
-    .split("@")[0]
-    .replace(/^\s*\d+\s*x\s*/i, "")
-    .trim();
+function bulkProductQueryFromClause(clause: string, products: ProductRecord[]) {
+  return bulkQuantityParts(clause.split("@")[0], products).productQuery;
 }
 
-function bulkClauseWithProduct(clause: string, productTitle: string) {
-  const prefix = clause.match(/^(\s*(?:\d+\s*x\s*)?)/i)?.[1] ?? "";
+function bulkClauseWithProduct(clause: string, productTitle: string, products: ProductRecord[]) {
+  const prefix = bulkQuantityParts(clause.split("@")[0], products).quantityPrefix;
   const suffix = clause.match(/(\s*@\s*\d*(?:\.\d*)?\s*)$/)?.[1] ?? "";
 
   return {
@@ -566,12 +603,10 @@ function SalesLogCard({
 export function SalesManager({
   products,
   sales,
-  metrics,
   displaySettings
 }: {
   products: ProductRecord[];
   sales: SaleRecord[];
-  metrics: SalesMetrics;
   displaySettings: DisplaySettings;
 }) {
   const router = useRouter();
@@ -594,6 +629,7 @@ export function SalesManager({
   const [deletingSaleId, setDeletingSaleId] = useState<string | null>(null);
   const [syncingSaleIds, setSyncingSaleIds] = useState<string[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [expandedHistoryDays, setExpandedHistoryDays] = useState<Set<string>>(() => new Set());
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -631,8 +667,9 @@ export function SalesManager({
   const selectedProductRemainingQuantity =
     selectedProductStockLimit === null ? null : selectedProductStockLimit - selectedProductReservedQuantity;
   const bulkPreview = useMemo(() => parseBulkSaleInput(bulkText, productsForDraft, lines), [bulkText, productsForDraft, lines]);
-  const bulkHasErrors = bulkPreview.some((item) => item.status === "error");
   const bulkTotal = bulkPreview.reduce((total, item) => (item.status === "ok" ? total + item.lineTotal : total), 0);
+  const bulkResolvedItems = useMemo(() => bulkPreview.filter((item) => item.status === "ok"), [bulkPreview]);
+  const bulkSkippedCount = bulkPreview.length - bulkResolvedItems.length;
   const bulkSuggestions = useMemo(() => {
     if (!bulkText.trim()) {
       return [];
@@ -645,7 +682,7 @@ export function SalesManager({
       return [];
     }
 
-    const productQuery = bulkProductQueryFromClause(range.clause);
+    const productQuery = bulkProductQueryFromClause(range.clause, productsForDraft);
 
     if (productQuery.length < 2) {
       return [];
@@ -653,8 +690,12 @@ export function SalesManager({
 
     return rankedProducts(productsForDraft, productQuery, 6);
   }, [bulkCursor, bulkText, productsForDraft]);
-  const dayOptions = useMemo(() => weekDayOptions(visibleSales), [visibleSales]);
   const allSales = useMemo(() => sortSales(visibleSales), [visibleSales]);
+  const salesDayGroups = useMemo(() => groupSalesByDay(allSales), [allSales]);
+  const todaySalesCount = useMemo(
+    () => visibleSales.filter((sale) => saleDateInputValue(sale.saleDate) === todayInputValue()).length,
+    [visibleSales]
+  );
   const allSalesRevenue = allSales.reduce((total, sale) => total + sale.subtotal, 0);
   const allSalesItems = allSales.reduce((total, sale) => total + saleItemCount(sale), 0);
   const allSalesProfit = allSales.reduce((total, sale) => total + sale.grossProfit, 0);
@@ -720,6 +761,20 @@ export function SalesManager({
     );
   };
 
+  const toggleHistoryDay = (key: string) => {
+    setExpandedHistoryDays((current) => {
+      const next = new Set(current);
+
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+
+      return next;
+    });
+  };
+
   const addLine = () => {
     if (!selectedProduct) {
       toast.error("Choose a product.");
@@ -760,7 +815,7 @@ export function SalesManager({
   const applyBulkSuggestion = (product: ProductRecord) => {
     const cursor = bulkTextareaRef.current?.selectionStart ?? bulkText.length;
     const range = bulkClauseRange(bulkText, cursor);
-    const nextClause = bulkClauseWithProduct(range.clause, product.title);
+    const nextClause = bulkClauseWithProduct(range.clause, product.title, productsForDraft);
     const nextText = `${bulkText.slice(0, range.start)}${nextClause.value}${bulkText.slice(range.end)}`;
     const nextCursor = range.start + nextClause.cursorOffset;
 
@@ -772,20 +827,20 @@ export function SalesManager({
     });
   };
 
-  const addBulkLines = () => {
+  const resolveBulkLines = () => {
     if (!bulkText.trim()) {
       toast.error("Type sale items first.");
       return;
     }
 
-    if (!bulkPreview.length || bulkHasErrors) {
-      toast.error("Fix highlighted text sale items.");
+    if (!bulkPreview.length || !bulkResolvedItems.length) {
+      toast.error("No in-stock matches to add.");
       return;
     }
 
     setLines((current) => [
       ...current,
-      ...bulkPreview.map((item) => ({
+      ...bulkResolvedItems.map((item) => ({
         key: crypto.randomUUID(),
         productId: item.product!.id,
         productTitle: item.product!.title,
@@ -798,7 +853,9 @@ export function SalesManager({
     ]);
     setBulkText("");
     setBulkCursor(0);
-    toast.success("Text sale added.");
+    toast.success(
+      `Resolved ${bulkResolvedItems.length} item${bulkResolvedItems.length === 1 ? "" : "s"}${bulkSkippedCount ? `, skipped ${bulkSkippedCount}` : ""}.`
+    );
   };
 
   const resetSaleForm = () => {
@@ -1009,53 +1066,26 @@ export function SalesManager({
 
   return (
     <div className="grid gap-4">
-      <div className={cn("grid gap-2", displaySettings.showMargin ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-2 xl:grid-cols-3")}>
-        <StatCard title="Today" value={formatCurrency(visibleMetrics.todayRevenue)} icon={IndianRupee} tone="green" compact />
-        <StatCard title="Items" value={String(visibleMetrics.todayItems)} icon={ReceiptText} tone="blue" compact />
-        {displaySettings.showMargin ? (
-          <StatCard title="Profit" value={formatCurrency(visibleMetrics.todayProfit)} icon={TrendingUp} tone="orange" compact />
-        ) : null}
-        <StatCard title="Month" value={formatCurrency(visibleMetrics.monthRevenue)} icon={CalendarDays} tone="neutral" compact />
-      </div>
-
-      <section className="-mx-2.5 overflow-x-auto px-2.5 sm:mx-0 sm:px-0" aria-label="Sales day">
-        <div className="flex gap-1.5 pb-1">
-          {dayOptions.map((day) => {
-            const active = day.value === saleDate;
-
-            return (
-              <button
-                key={day.value}
-                type="button"
-                onClick={() => changeSaleDate(day.value)}
-                className={cn(
-                  "grid min-w-[4.8rem] shrink-0 gap-0.5 rounded-md border px-2 py-1.5 text-left text-xs transition-colors sm:min-w-0 sm:flex-1",
-                  active ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
-                )}
-              >
-                <span className="truncate font-semibold">{day.label}</span>
-                <span className={cn("truncate text-[11px]", active ? "text-primary-foreground/80" : "text-muted-foreground")}>{day.dateLabel}</span>
-                <span className={cn("truncate text-[11px]", active ? "text-primary-foreground/90" : "text-muted-foreground")}>
-                  {day.logs ? `${day.logs} log${day.logs === 1 ? "" : "s"}` : "No sales"}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
       <Card>
         <CardHeader className="grid gap-2 space-y-0 sm:flex sm:items-center sm:justify-between">
           <div>
             <CardTitle>{editingSaleId ? "Edit Sale" : "Quick Sale"}</CardTitle>
-            <p className="text-sm text-muted-foreground">Type sale lines and save. Today and Cash are used unless changed in Advanced.</p>
+            <p className="text-sm text-muted-foreground">Type sale lines, resolve matches, then save. Cash is used unless changed in Advanced.</p>
           </div>
-          {editingSaleId ? (
-            <Button type="button" variant="outline" size="sm" onClick={resetSaleForm}>
-              <X />
-              Cancel Edit
-            </Button>
-          ) : null}
+          <div className="grid gap-2 sm:flex sm:items-end">
+            <div className="grid gap-1">
+              <Label htmlFor="saleDate" className="text-xs text-muted-foreground">
+                Sale date
+              </Label>
+              <Input id="saleDate" type="date" value={saleDate} onChange={(event) => changeSaleDate(event.target.value || todayInputValue())} />
+            </div>
+            {editingSaleId ? (
+              <Button type="button" variant="outline" size="sm" onClick={resetSaleForm}>
+                <X />
+                Cancel Edit
+              </Button>
+            ) : null}
+          </div>
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="relative grid gap-2">
@@ -1082,10 +1112,10 @@ export function SalesManager({
 
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
-                  addBulkLines();
+                  resolveBulkLines();
                 }
               }}
-              placeholder="1x cobra blade @250, 3x drill bit @150"
+              placeholder="3 cobra, 5 oxipower grinder"
               className="min-h-20 font-mono text-sm sm:min-h-16"
             />
             {bulkSuggestions.length ? (
@@ -1136,11 +1166,11 @@ export function SalesManager({
 
             <div className="grid gap-2 sm:flex sm:items-center sm:justify-between">
               <p className="text-xs text-muted-foreground">
-                Use comma or new line: 2x product name @250. @ sets sold price; omit @ for default. Type a few letters, Tab picks first suggestion.
+                Use comma or new line: 3 cobra, 5 oxipower grinder. Add @250 only when sold price is different. Out-of-stock items are skipped.
               </p>
-              <Button type="button" variant="outline" size="sm" onClick={addBulkLines} disabled={!bulkText.trim()}>
+              <Button type="button" variant="outline" size="sm" onClick={resolveBulkLines} disabled={!bulkText.trim()}>
                 <WandSparkles />
-                Add from Text
+                Resolve Items
               </Button>
             </div>
           </div>
@@ -1153,23 +1183,17 @@ export function SalesManager({
 
             {advancedOpen ? (
               <div className="grid gap-3 rounded-lg border bg-muted/25 p-3">
-                <div className="grid gap-3 md:grid-cols-[1fr_180px]">
-                  <div className="grid gap-2">
-                    <Label htmlFor="saleDate">Sale date</Label>
-                    <Input id="saleDate" type="date" value={saleDate} onChange={(event) => changeSaleDate(event.target.value || todayInputValue())} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Payment</Label>
-                    <Select value={paymentMode} onValueChange={(value) => setPaymentMode(value as typeof paymentMode)}>
-                      <SelectTrigger>
-                        <span>{paymentMode === "UPI" ? "UPI" : "Cash"}</span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CASH">Cash</SelectItem>
-                        <SelectItem value="UPI">UPI</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="grid gap-2 sm:max-w-48">
+                  <Label>Payment</Label>
+                  <Select value={paymentMode} onValueChange={(value) => setPaymentMode(value as typeof paymentMode)}>
+                    <SelectTrigger>
+                      <span>{paymentMode === "UPI" ? "UPI" : "Cash"}</span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CASH">Cash</SelectItem>
+                      <SelectItem value="UPI">UPI</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="grid gap-2">
@@ -1293,11 +1317,21 @@ export function SalesManager({
             </div>
           ) : null}
 
-          <div className="grid gap-2 rounded-lg bg-muted/40 p-3 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Sale Total</p>
-              <p className="text-xl font-semibold">{formatCurrency(subtotal)}</p>
-              {displaySettings.showMargin ? <p className="text-xs text-emerald-600">Profit {formatCurrency(profit)}</p> : null}
+          <div className="grid gap-3 rounded-lg bg-muted/40 p-3 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <p className="text-sm text-muted-foreground">Sale Total</p>
+                <p className="text-xl font-semibold">{formatCurrency(subtotal)}</p>
+                {displaySettings.showMargin ? <p className="text-xs text-emerald-600">Profit {formatCurrency(profit)}</p> : null}
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Today&apos;s Sales</p>
+                <p className="text-xl font-semibold">{formatCurrency(visibleMetrics.todayRevenue)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {todaySalesCount} logs / {visibleMetrics.todayItems} items
+                </p>
+                {displaySettings.showMargin ? <p className="text-xs text-emerald-600">Profit {formatCurrency(visibleMetrics.todayProfit)}</p> : null}
+              </div>
             </div>
             <Button type="button" onClick={saveSale} disabled={!lines.length}>
               <ReceiptText />
@@ -1338,25 +1372,56 @@ export function SalesManager({
             {displaySettings.showMargin ? <Badge variant="outline">Total profit {formatCurrency(allSalesProfit)}</Badge> : null}
           </div>
           {historyOpen ? (
-            allSales.length ? (
+            salesDayGroups.length ? (
               <div className="grid">
-                {allSales.map((sale) => (
-                  <SalesLogCard
-                    key={sale.id}
-                    sale={sale}
-                    showMargin={displaySettings.showMargin}
-                    onEdit={startEditSale}
-                    onDelete={deleteSale}
-                    isDeleting={deletingSaleId === sale.id}
-                    isSyncing={syncingSaleIds.includes(sale.id)}
-                  />
-                ))}
+                {salesDayGroups.map((day) => {
+                  const expanded = expandedHistoryDays.has(day.key);
+
+                  return (
+                    <div key={day.key} className="border-b last:border-0">
+                      <button
+                        type="button"
+                        className="grid w-full gap-2 px-3 py-3 text-left hover:bg-muted/45 sm:grid-cols-[1fr_auto] sm:items-center sm:px-4"
+                        onClick={() => toggleHistoryDay(day.key)}
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold">{day.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {day.logs} logs / {day.items} items
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between gap-3 sm:justify-end">
+                          <div className="text-right">
+                            <p className="font-semibold">{formatCurrency(day.revenue)}</p>
+                            {displaySettings.showMargin ? <p className="text-xs text-emerald-600">Profit {formatCurrency(day.profit)}</p> : null}
+                          </div>
+                          <ChevronDown className={cn("size-4 shrink-0 transition-transform", expanded && "rotate-180")} />
+                        </div>
+                      </button>
+                      {expanded ? (
+                        <div className="border-t">
+                          {day.sales.map((sale) => (
+                            <SalesLogCard
+                              key={sale.id}
+                              sale={sale}
+                              showMargin={displaySettings.showMargin}
+                              onEdit={startEditSale}
+                              onDelete={deleteSale}
+                              isDeleting={deletingSaleId === sale.id}
+                              isSyncing={syncingSaleIds.includes(sale.id)}
+                            />
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">No sales logged yet.</div>
             )
           ) : (
-            <div className="px-4 py-3 text-sm text-muted-foreground">History is hidden. Open it when you need the full sale log.</div>
+            <div className="px-4 py-3 text-sm text-muted-foreground">History is grouped by day. Show it when you need older sale details.</div>
           )}
         </div>
       </section>
