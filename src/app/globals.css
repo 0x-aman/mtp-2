@@ -59,14 +59,14 @@
 
 .bill-preview-wrapper {
   width: 100%;
-  max-width: 860px;
+  max-width: 760px;
   margin-inline: auto;
   overflow-x: auto;
-  padding: 0.25rem;
+  padding: 0.25rem 1rem;
 }
 
 .bill-paper {
-  border: 1px solid #111;
+  border: 1px solid #333;
   border-radius: 0;
   background: #fff;
   color: #111;
@@ -75,46 +75,45 @@
 }
 
 .bill-title-strip {
-  position: relative;
-  display: grid;
-  align-items: center;
-  min-height: 2.45rem;
-  border-bottom: 1px solid #111;
-  padding: 0.35rem 0.7rem;
-  text-align: center;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.8rem 1.25rem 0.35rem;
+  text-align: left;
 }
 
 .bill-title-strip p {
-  font-size: clamp(1.05rem, 3vw, 1.35rem);
-  font-weight: 500;
-  line-height: 1.15;
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
   text-transform: uppercase;
 }
 
 .bill-title-strip div {
-  position: absolute;
-  top: 50%;
-  right: 0.7rem;
   display: grid;
   gap: 0.1rem;
-  min-width: 8.5rem;
-  transform: translateY(-50%);
+  min-width: 9rem;
+  border: 1px solid #555;
+  padding: 0.38rem 0.48rem;
   text-align: left;
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1.08;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
 .bill-company {
-  padding: 1rem 0.85rem 0.8rem;
+  border-bottom: 1px solid #555;
+  padding: 0.35rem 1.25rem 0.85rem;
   text-align: center;
 }
 
 .bill-company h2 {
   overflow-wrap: anywhere;
-  font-size: clamp(2rem, 7vw, 3rem);
-  font-weight: 500;
+  font-size: clamp(1.55rem, 4.5vw, 2rem);
+  font-weight: 700;
   letter-spacing: 0;
   line-height: 1.05;
   text-transform: uppercase;
@@ -122,8 +121,8 @@
 
 .bill-company p {
   margin-top: 0.15rem;
-  font-size: clamp(0.92rem, 2.5vw, 1.08rem);
-  font-weight: 500;
+  font-size: 0.82rem;
+  font-weight: 400;
   line-height: 1.15;
   text-transform: uppercase;
 }
@@ -131,56 +130,57 @@
 .bill-body {
   display: grid;
   gap: 0;
-  padding: 0 0.85rem 1rem;
+  padding: 0 1.25rem 1.2rem;
 }
 
 .bill-party-box {
-  min-height: 7.5rem;
-  border: 1px solid #111;
-  border-bottom: 0;
-  padding: 0.85rem;
-  font-size: 0.95rem;
-  line-height: 1.22;
+  min-height: 0;
+  border-bottom: 1px solid #555;
+  padding: 0.65rem 0;
+  font-size: 0.86rem;
+  line-height: 1.3;
 }
 
 .bill-box-label {
   margin-bottom: 0.25rem;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
 .bill-party-name {
   overflow-wrap: anywhere;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
 .bill-table-wrap {
+  margin-top: 0.55rem;
   overflow-x: auto;
-  border: 1px solid #111;
+  border: 1px solid #555;
   border-radius: 0;
 }
 
 .bill-table {
   width: 100%;
-  min-width: 650px;
+  min-width: 0;
   border-collapse: collapse;
   border-spacing: 0;
-  font-size: 0.9rem;
-  line-height: 1.2;
+  table-layout: fixed;
+  font-size: 0.82rem;
+  line-height: 1.25;
 }
 
 .bill-table th {
-  border: 1px solid #111;
-  border-top: 0;
-  background: #fff;
+  border-right: 1px solid #555;
+  border-bottom: 1px solid #555;
+  background: #f3f3f3;
   color: #111;
-  padding: 0.5rem 0.5rem;
+  padding: 0.42rem 0.45rem;
   text-align: left;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0;
-  line-height: 1.05;
+  line-height: 1.1;
 }
 
 .bill-table th:first-child,
@@ -194,13 +194,13 @@
 }
 
 .bill-table td {
-  border-right: 1px solid #111;
-  border-left: 1px solid #111;
-  padding: 0.25rem 0.5rem;
+  border-right: 1px solid #666;
+  border-bottom: 1px solid #d8d8d8;
+  padding: 0.35rem 0.45rem;
   vertical-align: top;
 }
 
-.bill-table tbody tr:not(:last-child) td {
+.bill-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
@@ -211,22 +211,18 @@
 }
 
 .bill-col-index {
-  width: 2.5rem;
+  width: 2.2rem;
   text-align: center !important;
 }
 
-.bill-col-sku {
-  width: 7rem;
-}
-
 .bill-col-qty {
-  width: 4.25rem;
+  width: 3.5rem;
   text-align: center !important;
   font-weight: 700;
 }
 
 .bill-col-money {
-  width: 8rem;
+  width: 6.5rem;
   text-align: right !important;
   white-space: nowrap;
 }
@@ -235,27 +231,24 @@
   font-weight: 700;
 }
 
-.bill-filler-row td {
-  height: 12rem;
-  padding: 0;
-}
-
 .bill-empty-row {
-  padding: 4rem 1rem !important;
+  padding: 1.75rem 1rem !important;
   text-align: center;
 }
 
 .bill-lower-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem);
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 15rem);
+  gap: 1rem;
   align-items: start;
+  margin-top: 0.6rem;
+  border-top: 1px solid #555;
+  padding-top: 0.6rem;
 }
 
 .bill-note {
-  min-height: 5.25rem;
-  border-left: 1px solid #111;
-  border-bottom: 1px solid #111;
-  padding: 0.7rem;
+  min-height: 0;
+  padding: 0.15rem 0 0;
 }
 
 .bill-note p {
@@ -265,9 +258,7 @@
 
 .bill-total-box {
   overflow: hidden;
-  border-right: 1px solid #111;
-  border-bottom: 1px solid #111;
-  border-left: 1px solid #111;
+  border: 1px solid #555;
   border-radius: 0;
 }
 
@@ -281,8 +272,13 @@
 }
 
 .bill-total-row {
-  border-bottom: 1px solid #111;
+  border-bottom: 1px solid #555;
   font-size: 0.9rem;
+}
+
+.bill-grand-row {
+  border-top: 1px solid #333;
+  background: #f3f3f3;
 }
 
 .bill-grand-row span,
@@ -292,71 +288,92 @@
 }
 
 .bill-footer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 15rem;
-  gap: 1rem;
-  align-items: end;
-  padding: 2.2rem 0.2rem 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.2rem 0 0;
   font-size: 0.86rem;
-}
-
-.bill-footer > span {
-  border-top: 1px solid #111;
 }
 
 .bill-signature {
   display: grid;
   gap: 0.45rem;
-  justify-items: end;
+  align-content: end;
+  justify-items: stretch;
+  width: 12rem;
+  min-height: 4rem;
+  border: 1px solid #555;
+  padding: 0.75rem;
 }
 
 .bill-signature span {
-  width: min(12rem, 100%);
-  border-top: 1px solid #111;
+  width: 100%;
+  border-top: 1px solid #555;
 }
 
 .bill-signature strong {
+  text-align: center;
   font-size: 0.84rem;
 }
 
 @media (max-width: 639px) {
-  .bill-title-strip {
-    gap: 0.25rem;
-    padding: 0.55rem 0.65rem;
+  .bill-preview-wrapper {
+    padding: 0.25rem 0;
   }
 
+  .bill-title-strip {
+    flex-direction: column;
+    gap: 0.45rem;
+    align-items: stretch;
+    padding: 0.7rem 0.85rem 0.35rem;
+  }
+
+  .bill-title-strip p,
   .bill-title-strip div {
-    position: static;
-    min-width: 0;
-    justify-self: center;
-    transform: none;
     text-align: center;
   }
 
+  .bill-title-strip div {
+    min-width: 0;
+  }
+
   .bill-company {
-    padding: 0.85rem 0.65rem;
+    padding: 0.35rem 0.85rem 0.7rem;
+  }
+
+  .bill-company h2 {
+    font-size: 1.35rem;
+  }
+
+  .bill-company p {
+    font-size: 0.74rem;
   }
 
   .bill-body {
-    padding: 0 0.65rem 0.85rem;
+    padding: 0 0.85rem 1rem;
   }
 
   .bill-party-box {
-    min-height: 6.5rem;
-    font-size: 0.88rem;
+    font-size: 0.78rem;
   }
 
   .bill-table {
-    min-width: 610px;
+    min-width: 520px;
+    font-size: 0.76rem;
   }
 
-  .bill-lower-grid,
-  .bill-footer {
+  .bill-col-money {
+    width: 5.75rem;
+  }
+
+  .bill-lower-grid {
     grid-template-columns: 1fr;
+    gap: 0.6rem;
   }
 
-  .bill-total-box {
-    border-top: 0;
+  .bill-signature {
+    width: 100%;
+    max-width: 12rem;
+    margin-left: auto;
   }
 }
 
@@ -387,7 +404,7 @@
     top: 0;
     left: 0;
     width: 100%;
-    border: 1px solid #111 !important;
+    border: 1px solid #333 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     print-color-adjust: exact;
@@ -395,39 +412,38 @@
   }
 
   .bill-title-strip {
-    min-height: 9mm;
-    padding: 1.3mm 3.5mm;
+    padding: 5mm 7mm 1.5mm;
   }
 
   .bill-title-strip p {
-    font-size: 15pt;
+    font-size: 7pt;
   }
 
   .bill-title-strip div {
     min-width: 34mm;
-    font-size: 8pt;
+    padding: 1.5mm 2mm;
+    font-size: 7pt;
   }
 
   .bill-company {
-    padding: 6mm 4mm 4mm;
+    padding: 1.5mm 7mm 4mm;
   }
 
   .bill-company h2 {
-    font-size: 28pt;
+    font-size: 22pt;
   }
 
   .bill-company p {
-    font-size: 11pt;
+    font-size: 8.5pt;
   }
 
   .bill-body {
-    padding: 0 4mm 7mm;
+    padding: 0 7mm 7mm;
   }
 
   .bill-party-box {
-    min-height: 28mm;
-    padding: 4mm;
-    font-size: 10.5pt;
+    padding: 3mm 0;
+    font-size: 8.5pt;
   }
 
   .bill-table-wrap {
@@ -436,29 +452,51 @@
 
   .bill-table {
     min-width: 0;
-    font-size: 9.5pt;
+    font-size: 8.5pt;
   }
 
   .bill-table th {
-    padding: 2mm 2.2mm;
-    font-size: 8pt;
+    padding: 1.8mm 2mm;
+    font-size: 7.5pt;
   }
 
   .bill-table td {
-    padding: 1.3mm 2.2mm;
-  }
-
-  .bill-filler-row td {
-    height: 52mm;
+    padding: 1.5mm 2mm;
   }
 
   .bill-lower-grid {
-    grid-template-columns: minmax(0, 1fr) 64mm;
+    grid-template-columns: minmax(0, 1fr) 55mm;
+    gap: 6mm;
+    margin-top: 4mm;
+    padding-top: 4mm;
+  }
+
+  .bill-note p {
+    font-size: 8pt;
+  }
+
+  .bill-total-row,
+  .bill-grand-row {
+    padding: 2mm 2.5mm;
+  }
+
+  .bill-grand-row span,
+  .bill-grand-row strong {
+    font-size: 10pt;
   }
 
   .bill-footer {
-    grid-template-columns: minmax(0, 1fr) 52mm;
-    padding-top: 11mm;
+    padding-top: 8mm;
+  }
+
+  .bill-signature {
+    width: 45mm;
+    min-height: 20mm;
+    padding: 3mm;
+  }
+
+  .bill-signature strong {
+    font-size: 8pt;
   }
 
   .no-print {

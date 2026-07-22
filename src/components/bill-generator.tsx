@@ -182,7 +182,6 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
                     <tr>
                       <th className="bill-col-index">#</th>
                       <th>Particulars (Descriptions & Specifications)</th>
-                      <th className="bill-col-sku">SKU</th>
                       <th className="bill-col-qty">Qty</th>
                       <th className="bill-col-money">Rate</th>
                       <th className="bill-col-money">Amount</th>
@@ -195,25 +194,14 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
                         <td>
                           <p className="bill-item-title">{line.title}</p>
                         </td>
-                        <td className="bill-col-sku">{line.sku}</td>
                         <td className="bill-col-qty">{line.quantity}</td>
                         <td className="bill-col-money">{formatCurrency(line.unitPrice)}</td>
                         <td className="bill-col-money bill-line-total">{formatCurrency(line.quantity * line.unitPrice)}</td>
                       </tr>
                     ))}
-                    {lines.length ? (
-                      <tr className="bill-filler-row" aria-hidden="true">
-                        <td />
-                        <td />
-                        <td />
-                        <td />
-                        <td />
-                        <td />
-                      </tr>
-                    ) : null}
                     {!lines.length ? (
                       <tr>
-                        <td colSpan={6} className="bill-empty-row">
+                        <td colSpan={5} className="bill-empty-row">
                           No items added.
                         </td>
                       </tr>
@@ -239,7 +227,6 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
               </div>
 
               <div className="bill-footer">
-                <span />
                 <div className="bill-signature">
                   <span />
                   <strong>Authorized Signature</strong>
