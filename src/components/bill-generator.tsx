@@ -223,8 +223,7 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
 
             <div className="bill-lower-grid">
               <div className="bill-note">
-                <span>Terms & Conditions</span>
-                <p>Goods once sold will not be taken back without bill.</p>
+                <p>no return, no exchange, no warranty</p>
               </div>
               <div className="bill-total-box">
                 <div className="bill-total-row">
