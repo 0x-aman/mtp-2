@@ -227,9 +227,11 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
               </div>
 
               <div className="bill-footer">
-                <div className="bill-signature">
-                  <span />
-                  <strong>Authorized Signature</strong>
+                <div className="bill-stamp" aria-label={`${shop.name} stamp`}>
+                  <strong>{shop.name}</strong>
+                  <span>{shop.address}</span>
+                  <span>Phone: {shop.contact}</span>
+                  <em>{todayLabel()}</em>
                 </div>
               </div>
             </div>

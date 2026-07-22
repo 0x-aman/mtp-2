@@ -155,6 +155,7 @@
 
 .bill-table-wrap {
   margin-top: 0.55rem;
+  min-height: 17rem;
   overflow-x: auto;
   border: 1px solid #555;
   border-radius: 0;
@@ -290,29 +291,44 @@
 .bill-footer {
   display: flex;
   justify-content: flex-end;
-  padding: 1.2rem 0 0;
+  padding: 1.5rem 0 0.15rem;
   font-size: 0.86rem;
 }
 
-.bill-signature {
+.bill-stamp {
   display: grid;
-  gap: 0.45rem;
-  align-content: end;
-  justify-items: stretch;
-  width: 12rem;
-  min-height: 4rem;
-  border: 1px solid #555;
-  padding: 0.75rem;
-}
-
-.bill-signature span {
-  width: 100%;
-  border-top: 1px solid #555;
-}
-
-.bill-signature strong {
+  place-items: center;
+  width: 10.5rem;
+  min-height: 5.2rem;
+  transform: rotate(-8deg);
+  border: 2px solid #1d4ed8;
+  border-radius: 999px;
+  color: #1d4ed8;
+  padding: 0.65rem 0.8rem;
   text-align: center;
-  font-size: 0.84rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.bill-stamp strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 0.7rem;
+  line-height: 1.05;
+}
+
+.bill-stamp span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.bill-stamp em {
+  color: #dc2626;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
 }
 
 @media (max-width: 639px) {
@@ -370,9 +386,9 @@
     gap: 0.6rem;
   }
 
-  .bill-signature {
+  .bill-stamp {
     width: 100%;
-    max-width: 12rem;
+    max-width: 10.5rem;
     margin-left: auto;
   }
 }
@@ -447,6 +463,7 @@
   }
 
   .bill-table-wrap {
+    min-height: 68mm;
     overflow: visible;
   }
 
@@ -486,17 +503,23 @@
   }
 
   .bill-footer {
-    padding-top: 8mm;
+    padding-top: 7mm;
   }
 
-  .bill-signature {
-    width: 45mm;
-    min-height: 20mm;
-    padding: 3mm;
+  .bill-stamp {
+    width: 42mm;
+    min-height: 22mm;
+    border-width: 1.5pt;
+    padding: 2.5mm 3mm;
+    font-size: 5.8pt;
   }
 
-  .bill-signature strong {
-    font-size: 8pt;
+  .bill-stamp strong {
+    font-size: 6.8pt;
+  }
+
+  .bill-stamp em {
+    font-size: 6.5pt;
   }
 
   .no-print {
