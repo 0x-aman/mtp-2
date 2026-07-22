@@ -1,11 +1,11 @@
 # MAHALAXMI POWER TOOLS Inventory
 
-Modern single-owner inventory management app built with Next.js 15, TypeScript, Prisma, PostgreSQL, Tailwind CSS, shadcn-style components, TanStack Table, Recharts, CSV import/export, and optional AI image extraction.
+Modern single-owner inventory management app built with Next.js 16, TypeScript, Prisma, local SQLite, Tailwind CSS, shadcn-style components, TanStack Table, Recharts, CSV import/export, and optional AI image extraction.
 
 ## Setup
 
 1. Copy `.env.example` to `.env.local`.
-2. Replace the placeholder values for `DATABASE_URL`, `APP_PIN`, `SESSION_SECRET`, and optional OpenAI variables.
+2. Keep `DATABASE_URL="file:./mpt.db"` for local SQLite, and replace the placeholder values for `APP_PIN`, `SESSION_SECRET`, and optional OpenAI variables.
 3. Install dependencies:
 
 ```bash

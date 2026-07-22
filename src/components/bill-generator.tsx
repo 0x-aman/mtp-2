@@ -96,31 +96,44 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
             </Button>
           </div>
 
-          <div className="grid gap-2 rounded-lg border p-2">
+          <div className="overflow-x-auto rounded-lg border">
             {lines.length ? (
-              lines.map((line) => (
-                <div key={line.key} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-md bg-muted/40 p-2 text-sm">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{line.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {line.quantity} x {formatCurrency(line.unitPrice)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{formatCurrency(line.quantity * line.unitPrice)}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      onClick={() => setLines((current) => current.filter((item) => item.key !== line.key))}
-                    >
-                      <Trash2 className="size-4" />
-                      <span className="sr-only">Remove</span>
-                    </Button>
-                  </div>
-                </div>
-              ))
+              <table className="w-full min-w-[520px] text-sm">
+                <thead className="bg-muted/60">
+                  <tr className="text-left">
+                    <th className="border-b px-2 py-2 font-medium">Item</th>
+                    <th className="border-b px-2 py-2 text-center font-medium">Qty</th>
+                    <th className="border-b px-2 py-2 text-right font-medium">Rate</th>
+                    <th className="border-b px-2 py-2 text-right font-medium">Amount</th>
+                    <th className="border-b px-2 py-2 text-right font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((line) => (
+                    <tr key={line.key} className="border-b last:border-0">
+                      <td className="px-2 py-2">
+                        <p className="font-medium">{line.title}</p>
+                        <p className="text-xs text-muted-foreground">{line.sku}</p>
+                      </td>
+                      <td className="px-2 py-2 text-center">{line.quantity}</td>
+                      <td className="px-2 py-2 text-right">{formatCurrency(line.unitPrice)}</td>
+                      <td className="px-2 py-2 text-right font-semibold">{formatCurrency(line.quantity * line.unitPrice)}</td>
+                      <td className="px-2 py-2 text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={() => setLines((current) => current.filter((item) => item.key !== line.key))}
+                        >
+                          <Trash2 className="size-4" />
+                          <span className="sr-only">Remove</span>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             ) : (
               <div className="py-6 text-center text-sm text-muted-foreground">Add products to generate a bill.</div>
             )}
@@ -139,64 +152,90 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
         </CardContent>
       </Card>
 
-      <Card className="print-area">
-        <CardContent className="p-5">
-          <div className="flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h2 className="text-xl font-bold">{shop.name}</h2>
-              <p className="mt-1 max-w-xl text-sm text-muted-foreground">{shop.address}</p>
-              <p className="text-sm text-muted-foreground">Contact: {shop.contact}</p>
+      <Card className="print-area overflow-hidden">
+        <CardContent className="p-0">
+          <div className="border-b bg-muted/30 px-5 py-3 text-center">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cash Bill</p>
+            <h2 className="text-2xl font-bold uppercase">{shop.name}</h2>
+            <p className="mx-auto mt-1 max-w-2xl text-sm text-muted-foreground">{shop.address}</p>
+            <p className="text-sm font-medium">Contact: {shop.contact}</p>
+          </div>
+
+          <div className="grid border-b text-sm sm:grid-cols-2">
+            <div className="grid gap-1 border-b p-4 sm:border-b-0 sm:border-r">
+              <p>
+                <span className="font-medium">Bill No:</span> {billNumber}
+              </p>
+              <p>
+                <span className="font-medium">Date:</span> {todayLabel()}
+              </p>
             </div>
-            <div className="text-sm sm:text-right">
-              <p className="font-semibold">Bill</p>
-              <p className="text-muted-foreground">{billNumber}</p>
-              <p className="text-muted-foreground">{todayLabel()}</p>
+            <div className="grid gap-1 p-4">
+              <p>
+                <span className="font-medium">Customer:</span> {customer || "Walk-in"}
+              </p>
+              <p>
+                <span className="font-medium">Phone:</span> {phone || "-"}
+              </p>
             </div>
           </div>
 
-          <div className="grid gap-1 border-b py-4 text-sm sm:grid-cols-2">
-            <p>
-              <span className="text-muted-foreground">Customer:</span> {customer || "Walk-in"}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Phone:</span> {phone || "-"}
-            </p>
-          </div>
-
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] border-collapse text-sm">
               <thead>
-                <tr className="border-b text-left text-xs uppercase text-muted-foreground">
-                  <th className="py-2 pr-3 font-medium">Item</th>
-                  <th className="py-2 pr-3 font-medium">Qty</th>
-                  <th className="py-2 pr-3 font-medium">Rate</th>
-                  <th className="py-2 text-right font-medium">Amount</th>
+                <tr className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
+                  <th className="w-12 border px-2 py-2 text-center font-medium">#</th>
+                  <th className="border px-2 py-2 font-medium">Description</th>
+                  <th className="w-28 border px-2 py-2 font-medium">SKU</th>
+                  <th className="w-20 border px-2 py-2 text-center font-medium">Qty</th>
+                  <th className="w-28 border px-2 py-2 text-right font-medium">Rate</th>
+                  <th className="w-32 border px-2 py-2 text-right font-medium">Amount</th>
                 </tr>
               </thead>
               <tbody>
-                {lines.map((line) => (
+                {lines.map((line, index) => (
                   <tr key={line.key} className="border-b last:border-0">
-                    <td className="py-2 pr-3">
+                    <td className="border px-2 py-2 text-center">{index + 1}</td>
+                    <td className="border px-2 py-2">
                       <p className="font-medium">{line.title}</p>
-                      <p className="text-xs text-muted-foreground">{line.sku}</p>
                     </td>
-                    <td className="py-2 pr-3">{line.quantity}</td>
-                    <td className="py-2 pr-3">{formatCurrency(line.unitPrice)}</td>
-                    <td className="py-2 text-right font-medium">{formatCurrency(line.quantity * line.unitPrice)}</td>
+                    <td className="border px-2 py-2 text-xs text-muted-foreground">{line.sku}</td>
+                    <td className="border px-2 py-2 text-center">{line.quantity}</td>
+                    <td className="border px-2 py-2 text-right">{formatCurrency(line.unitPrice)}</td>
+                    <td className="border px-2 py-2 text-right font-medium">{formatCurrency(line.quantity * line.unitPrice)}</td>
                   </tr>
                 ))}
+                {!lines.length ? (
+                  <tr>
+                    <td colSpan={6} className="border px-2 py-10 text-center text-muted-foreground">
+                      No items added.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
 
-          <div className="mt-5 flex justify-end">
-            <div className="min-w-44 rounded-lg bg-muted/50 p-3 text-right">
-              <p className="text-sm text-muted-foreground">Total</p>
-              <p className="text-2xl font-bold">{formatCurrency(total)}</p>
+          <div className="grid border-b sm:grid-cols-[1fr_18rem]">
+            <div className="min-h-24 border-b p-4 text-sm text-muted-foreground sm:border-b-0 sm:border-r">
+              Goods once sold will not be taken back without bill.
+            </div>
+            <div className="grid text-sm">
+              <div className="grid grid-cols-2 border-b">
+                <span className="border-r px-3 py-2 font-medium">Subtotal</span>
+                <span className="px-3 py-2 text-right">{formatCurrency(total)}</span>
+              </div>
+              <div className="grid grid-cols-2">
+                <span className="border-r px-3 py-3 text-base font-bold">Grand Total</span>
+                <span className="px-3 py-3 text-right text-xl font-bold">{formatCurrency(total)}</span>
+              </div>
             </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">Thank you for your business.</p>
+          <div className="grid gap-8 px-5 py-5 text-sm sm:grid-cols-2">
+            <p className="text-muted-foreground">Thank you for your business.</p>
+            <p className="text-right font-medium">Authorized Signature</p>
+          </div>
         </CardContent>
       </Card>
     </div>

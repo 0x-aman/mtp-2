@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -14,15 +14,15 @@ model Product {
   brand              String?
   category           String?
   description        String?
-  costPrice          Decimal  @db.Decimal(12, 2)
-  sellingPrice       Decimal  @db.Decimal(12, 2)
-  marginPercent      Decimal  @db.Decimal(6, 2)
+  costPrice          Decimal
+  sellingPrice       Decimal
+  marginPercent      Decimal
   quantity           Int
   reorderLevel       Int      @default(5)
   imageUrl           String?
   isMachine          Boolean  @default(false)
-  defaultRentDeposit Decimal? @db.Decimal(12, 2)
-  defaultDailyRent   Decimal? @db.Decimal(12, 2)
+  defaultRentDeposit Decimal?
+  defaultDailyRent   Decimal?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -50,9 +50,9 @@ model Sale {
   saleDate    DateTime   @default(now())
   customer    String?
   paymentMode String     @default("CASH")
-  subtotal    Decimal    @db.Decimal(12, 2)
-  totalCost   Decimal    @db.Decimal(12, 2)
-  grossProfit Decimal    @db.Decimal(12, 2)
+  subtotal    Decimal
+  totalCost   Decimal
+  grossProfit Decimal
   note        String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -73,10 +73,10 @@ model SaleLine {
   productTitle String
   productSku   String
   quantity     Int
-  unitPrice    Decimal  @db.Decimal(12, 2)
-  unitCost     Decimal  @db.Decimal(12, 2)
-  lineTotal    Decimal  @db.Decimal(12, 2)
-  lineProfit   Decimal  @db.Decimal(12, 2)
+  unitPrice    Decimal
+  unitCost     Decimal
+  lineTotal    Decimal
+  lineProfit   Decimal
   createdAt    DateTime @default(now())
 
   @@index([saleId])
@@ -106,14 +106,14 @@ model Rental {
   machineSku     String
   customerName   String?
   customerPhone  String?
-  deposit        Decimal  @db.Decimal(12, 2)
-  dailyRent      Decimal  @db.Decimal(12, 2)
+  deposit        Decimal
+  dailyRent      Decimal
   paymentMode    String   @default("CASH")
   startedAt      DateTime @default(now())
   closedAt       DateTime?
   calendarDays   Int?
-  rentTotal      Decimal? @db.Decimal(12, 2)
-  depositBalance Decimal? @db.Decimal(12, 2)
+  rentTotal      Decimal?
+  depositBalance Decimal?
   status         String   @default("OPEN")
   note           String?
   createdAt      DateTime @default(now())

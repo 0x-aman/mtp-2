@@ -9,6 +9,11 @@ dist
 public/uploads/*
 !public/uploads/.gitkeep
 prisma/*.db
+prisma/*.db-journal
+prisma/*.db-wal
+prisma/*.db-shm
+backups/
+next-dev*.log
 
 
 #Ignore vscode AI rules

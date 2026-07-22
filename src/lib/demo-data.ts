@@ -89,7 +89,7 @@ export const demoActivity: ActivityRecord[] = [
     productTitle: "Rainbow Cutting Blade 4 inch",
     type: "Product Created",
     quantity: 80,
-    note: "Demo data shown until PostgreSQL is connected.",
+    note: "Demo data shown until the local database is connected.",
     createdAt: now.toISOString()
   },
   {

@@ -23,8 +23,8 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Inventory", icon: Boxes },
-  { href: "/rent", label: "Rent", icon: Clock },
   { href: "/sales", label: "Sales", icon: ReceiptText },
+  { href: "/rent", label: "Rent", icon: Clock },
   { href: "/bill", label: "Bill Generator", icon: FileText },
   { href: "/products/new", label: "New Product", icon: PackagePlus },
   { href: "/import/csv", label: "Import CSV", icon: FileUp },
@@ -34,8 +34,8 @@ const navItems = [
 
 const mobileNavItems = [
   { href: "/", label: "Inventory", icon: Boxes },
-  { href: "/rent", label: "Rent", icon: Clock },
   { href: "/sales", label: "Sales", icon: ReceiptText },
+  { href: "/rent", label: "Rent", icon: Clock },
   { href: "/add", label: "Add", icon: PackagePlus },
   { href: "/settings", label: "Settings", icon: Settings }
 ];

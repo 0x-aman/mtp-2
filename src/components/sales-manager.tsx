@@ -47,11 +47,34 @@ type BulkLinePreview = {
 };
 
 function todayInputValue() {
-  return new Date().toISOString().slice(0, 10);
+  return dateInputValueFromDate(new Date());
+}
+
+function dateInputValueFromDate(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function saleDateInputValue(value: string) {
-  return new Date(value).toISOString().slice(0, 10);
+  return dateInputValueFromDate(new Date(value));
+}
+
+function localDateFromInput(value: string) {
+  return new Date(`${value}T12:00:00`);
+}
+
+function addCalendarDays(value: Date, days: number) {
+  const date = new Date(value);
+  date.setDate(date.getDate() + days);
+
+  return date;
+}
+
+function sameCalendarDate(a: string, b: string) {
+  return dateInputValueFromDate(new Date(a)) === b;
 }
 
 function dateKey(value: string) {
@@ -78,6 +101,50 @@ function startOfToday() {
   date.setHours(0, 0, 0, 0);
 
   return date;
+}
+
+function weekDayOptions(sales: SaleRecord[]) {
+  const today = startOfToday();
+  const tomorrow = addCalendarDays(today, 1);
+  const weekStart = startOfWeek();
+  const values = Array.from({ length: 7 }, (_, index) => dateInputValueFromDate(addCalendarDays(weekStart, index)));
+  const tomorrowValue = dateInputValueFromDate(tomorrow);
+
+  if (!values.includes(tomorrowValue)) {
+    values.push(tomorrowValue);
+  }
+
+  const todayValue = dateInputValueFromDate(today);
+  const salesByDate = sales.reduce((map, sale) => {
+    const key = dateInputValueFromDate(new Date(sale.saleDate));
+    const current = map.get(key) ?? { logs: 0, revenue: 0, items: 0 };
+
+    current.logs += 1;
+    current.revenue += sale.subtotal;
+    current.items += saleItemCount(sale);
+    map.set(key, current);
+
+    return map;
+  }, new Map<string, { logs: number; revenue: number; items: number }>());
+
+  return values.map((value) => {
+    const date = localDateFromInput(value);
+    const summary = salesByDate.get(value) ?? { logs: 0, revenue: 0, items: 0 };
+    let label = new Intl.DateTimeFormat("en-IN", { weekday: "short" }).format(date);
+
+    if (value === todayValue) {
+      label = "Today";
+    } else if (value === tomorrowValue) {
+      label = "Tomorrow";
+    }
+
+    return {
+      value,
+      label,
+      dateLabel: new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short" }).format(date),
+      ...summary
+    };
+  });
 }
 
 function startOfWeek() {
@@ -499,6 +566,7 @@ export function SalesManager({
   const [bulkText, setBulkText] = useState("");
   const [bulkCursor, setBulkCursor] = useState(0);
   const [saleDate, setSaleDate] = useState(todayInputValue());
+  const [manualOpen, setManualOpen] = useState(false);
   const [paymentMode, setPaymentMode] = useState<"CASH" | "UPI">("CASH");
   const [note, setNote] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([]);
@@ -564,24 +632,20 @@ export function SalesManager({
 
     return rankedProducts(productsForDraft, productQuery, 6);
   }, [bulkCursor, bulkText, productsForDraft]);
-  const groupedSales = useMemo(() => {
-    return sales.reduce<Array<{ key: string; sales: SaleRecord[]; revenue: number; profit: number; items: number }>>((groups, sale) => {
-      const key = dateKey(sale.saleDate);
-      const group = groups.find((item) => item.key === key);
-      const items = saleItemCount(sale);
-
-      if (group) {
-        group.sales.push(sale);
-        group.revenue += sale.subtotal;
-        group.profit += sale.grossProfit;
-        group.items += items;
-      } else {
-        groups.push({ key, sales: [sale], revenue: sale.subtotal, profit: sale.grossProfit, items });
-      }
-
-      return groups;
-    }, []);
-  }, [visibleSales]);
+  const dayOptions = useMemo(() => weekDayOptions(visibleSales), [visibleSales]);
+  const selectedDay = dayOptions.find((day) => day.value === saleDate) ?? {
+    value: saleDate,
+    label: dateKey(localDateFromInput(saleDate).toISOString()),
+    dateLabel: new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short" }).format(localDateFromInput(saleDate)),
+    logs: 0,
+    revenue: 0,
+    items: 0
+  };
+  const selectedDaySales = useMemo(
+    () => sortSales(visibleSales.filter((sale) => sameCalendarDate(sale.saleDate, saleDate))),
+    [saleDate, visibleSales]
+  );
+  const selectedDayProfit = selectedDaySales.reduce((total, sale) => total + sale.grossProfit, 0);
 
   const pickProduct = (product: ProductRecord) => {
     setSelectedProduct(product);
@@ -717,11 +781,19 @@ export function SalesManager({
     setUnitPrice(0);
     setBulkText("");
     setBulkCursor(0);
-    setSaleDate(todayInputValue());
+    setManualOpen(false);
     setPaymentMode("CASH");
     setNote("");
     setLines([]);
     setEditingSaleId(null);
+  };
+
+  const selectSalesDay = (value: string) => {
+    if (editingSaleId || lines.length) {
+      resetSaleForm();
+    }
+
+    setSaleDate(value);
   };
 
   const markSaleSyncing = (saleId: string) => {
@@ -779,6 +851,7 @@ export function SalesManager({
     setSelectedProduct(null);
     setQuantity(1);
     setUnitPrice(0);
+    setManualOpen(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -916,11 +989,43 @@ export function SalesManager({
         <StatCard title="Month" value={formatCurrency(visibleMetrics.monthRevenue)} icon={CalendarDays} tone="neutral" compact />
       </div>
 
+      <section className="grid gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold">Choose Day</h2>
+          <span className="text-xs text-muted-foreground">This week</span>
+        </div>
+        <div className="-mx-2.5 flex gap-2 overflow-x-auto px-2.5 pb-1 sm:mx-0 sm:grid sm:grid-cols-4 sm:px-0 lg:grid-cols-7">
+          {dayOptions.map((day) => {
+            const active = day.value === saleDate;
+
+            return (
+              <button
+                key={day.value}
+                type="button"
+                onClick={() => selectSalesDay(day.value)}
+                className={cn(
+                  "grid min-w-28 shrink-0 gap-1 rounded-md border bg-card px-3 py-2 text-left text-sm transition-colors sm:min-w-0",
+                  active ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted"
+                )}
+              >
+                <span className="font-semibold">{day.label}</span>
+                <span className={cn("text-xs", active ? "text-primary-foreground/80" : "text-muted-foreground")}>{day.dateLabel}</span>
+                <span className={cn("text-xs", active ? "text-primary-foreground/90" : "text-muted-foreground")}>
+                  {day.logs ? `${formatCurrency(day.revenue)} - ${day.logs} logs` : "No sales"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <Card>
         <CardHeader className="grid gap-2 space-y-0 sm:flex sm:items-center sm:justify-between">
           <div>
             <CardTitle>{editingSaleId ? "Edit Sale" : "Quick Sale"}</CardTitle>
-            {editingSaleId ? <p className="text-sm text-muted-foreground">Editing an existing day log.</p> : null}
+            <p className="text-sm text-muted-foreground">
+              {editingSaleId ? "Editing an existing log for" : "Adding sales for"} {selectedDay.label}, {selectedDay.dateLabel}
+            </p>
           </div>
           {editingSaleId ? (
             <Button type="button" variant="outline" size="sm" onClick={resetSaleForm}>
@@ -1017,52 +1122,61 @@ export function SalesManager({
             </div>
           </div>
 
-          <div className="grid gap-2 md:grid-cols-[1fr_120px_140px_auto]">
-            <ProductSalePicker products={productsForDraft} query={query} onQueryChange={setQuery} onSelect={pickProduct} />
-            <div className="grid grid-cols-[2.5rem_1fr_2.5rem] overflow-hidden rounded-md border border-input bg-background">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-10 rounded-none"
-                onClick={decrementQuantity}
-                disabled={quantity <= 1}
-              >
-                <Minus />
-                <span className="sr-only">Decrease quantity</span>
-              </Button>
-              <Input
-                type="number"
-                min={1}
-                value={quantity}
-                onChange={(event) => updateQuantity(Number(event.target.value))}
-                placeholder="Qty"
-                className="h-10 rounded-none border-0 text-center focus-visible:ring-0"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-10 rounded-none"
-                onClick={incrementQuantity}
-                disabled={selectedProductRemainingQuantity !== null && selectedProductRemainingQuantity <= quantity}
-              >
-                <Plus />
-                <span className="sr-only">Increase quantity</span>
-              </Button>
-            </div>
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              value={unitPrice}
-              onChange={(event) => setUnitPrice(Number(event.target.value))}
-              placeholder="Sold price"
-            />
-            <Button type="button" onClick={addLine} className="w-full">
-              <Plus />
-              Add
+          <div className="grid gap-2">
+            <Button type="button" variant="outline" size="sm" className="w-full sm:w-fit" onClick={() => setManualOpen((open) => !open)}>
+              {manualOpen ? <Minus /> : <Plus />}
+              {manualOpen ? "Hide Manual Add" : "Manual Add"}
             </Button>
+
+            {manualOpen ? (
+              <div className="grid gap-2 rounded-lg border bg-muted/25 p-2 md:grid-cols-[1fr_120px_140px_auto]">
+                <ProductSalePicker products={productsForDraft} query={query} onQueryChange={setQuery} onSelect={pickProduct} />
+                <div className="grid grid-cols-[2.5rem_1fr_2.5rem] overflow-hidden rounded-md border border-input bg-background">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-10 rounded-none"
+                    onClick={decrementQuantity}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus />
+                    <span className="sr-only">Decrease quantity</span>
+                  </Button>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(event) => updateQuantity(Number(event.target.value))}
+                    placeholder="Qty"
+                    className="h-10 rounded-none border-0 text-center focus-visible:ring-0"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-10 rounded-none"
+                    onClick={incrementQuantity}
+                    disabled={selectedProductRemainingQuantity !== null && selectedProductRemainingQuantity <= quantity}
+                  >
+                    <Plus />
+                    <span className="sr-only">Increase quantity</span>
+                  </Button>
+                </div>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={unitPrice}
+                  onChange={(event) => setUnitPrice(Number(event.target.value))}
+                  placeholder="Sold price"
+                />
+                <Button type="button" onClick={addLine} className="w-full">
+                  <Plus />
+                  Add
+                </Button>
+              </div>
+            ) : null}
           </div>
 
           {selectedProduct ? (
@@ -1122,9 +1236,11 @@ export function SalesManager({
           ) : null}
 
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="saleDate">Date</Label>
-              <Input id="saleDate" type="date" value={saleDate} onChange={(event) => setSaleDate(event.target.value)} />
+            <div className="grid gap-1 rounded-md border bg-muted/30 px-3 py-2">
+              <span className="text-xs text-muted-foreground">Selected Day</span>
+              <span className="text-sm font-semibold">
+                {selectedDay.label}, {selectedDay.dateLabel}
+              </span>
             </div>
             <div className="grid gap-2">
               <Label>Payment</Label>
@@ -1161,43 +1277,42 @@ export function SalesManager({
 
       <section className="grid gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-base font-semibold">Sales Logs</h2>
-          <span className="text-xs text-muted-foreground">{groupedSales.length} days</span>
+          <div>
+            <h2 className="text-base font-semibold">{selectedDay.label} Logs</h2>
+            <p className="text-xs text-muted-foreground">{selectedDay.dateLabel}</p>
+          </div>
+          <div className="text-right text-xs text-muted-foreground">
+            <p>{selectedDaySales.length} logs</p>
+            <p>{selectedDay.items} items</p>
+          </div>
         </div>
 
-        {groupedSales.length ? (
-          groupedSales.map((group) => (
-            <div key={group.key} className="overflow-hidden rounded-lg border bg-card">
-              <div className="grid gap-2 border-b bg-muted/45 px-3 py-3 sm:flex sm:items-center sm:justify-between sm:px-4">
-                <div>
-                  <h3 className="text-sm font-semibold">{group.key}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {group.sales.length} logs - {group.items} items
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <Badge variant="secondary">{formatCurrency(group.revenue)}</Badge>
-                  {displaySettings.showMargin ? <Badge variant="outline">Profit {formatCurrency(group.profit)}</Badge> : null}
-                </div>
-              </div>
-              <div className="grid">
-                {group.sales.map((sale) => (
-                  <SalesLogCard
-                    key={sale.id}
-                    sale={sale}
-                    showMargin={displaySettings.showMargin}
-                    onEdit={startEditSale}
-                    onDelete={deleteSale}
-                    isDeleting={deletingSaleId === sale.id}
-                    isSyncing={syncingSaleIds.includes(sale.id)}
-                  />
-                ))}
-              </div>
+        <div className="overflow-hidden rounded-lg border bg-card">
+          <div className="grid gap-2 border-b bg-muted/45 px-3 py-3 sm:flex sm:items-center sm:justify-between sm:px-4">
+            <div>
+              <h3 className="text-sm font-semibold">{formatCurrency(selectedDay.revenue)}</h3>
+              <p className="text-xs text-muted-foreground">Total sales for selected day</p>
             </div>
-          ))
-        ) : (
-          <div className="rounded-lg border px-4 py-10 text-center text-sm text-muted-foreground">No sales logged yet.</div>
-        )}
+            {displaySettings.showMargin ? <Badge variant="outline">Profit {formatCurrency(selectedDayProfit)}</Badge> : null}
+          </div>
+          {selectedDaySales.length ? (
+            <div className="grid">
+              {selectedDaySales.map((sale) => (
+                <SalesLogCard
+                  key={sale.id}
+                  sale={sale}
+                  showMargin={displaySettings.showMargin}
+                  onEdit={startEditSale}
+                  onDelete={deleteSale}
+                  isDeleting={deletingSaleId === sale.id}
+                  isSyncing={syncingSaleIds.includes(sale.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">No sales logged for this day.</div>
+          )}
+        </div>
       </section>
     </div>
   );

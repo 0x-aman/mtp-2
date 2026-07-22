@@ -152,7 +152,7 @@ export function ProductForm({
   });
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-5 pb-20 sm:pb-0">
+    <form onSubmit={onSubmit} className="grid gap-5">
       <Card>
         <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-3">
           <CardTitle>Product Details</CardTitle>
@@ -274,7 +274,7 @@ export function ProductForm({
         </CardContent>
       </Card>
 
-      <div className="sticky bottom-[calc(4.2rem+env(safe-area-inset-bottom))] z-20 -mx-2.5 grid grid-cols-2 gap-2 border-t bg-background/95 p-2.5 backdrop-blur sm:static sm:mx-0 sm:flex sm:justify-end sm:border-0 sm:bg-transparent sm:p-0">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
         <Button type="button" variant="outline" onClick={() => router.back()} className="w-full sm:w-auto">
           Cancel
         </Button>
