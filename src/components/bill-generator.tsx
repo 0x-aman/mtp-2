@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Plus, Printer, Trash2 } from "lucide-react";
+import { Plus, Printer, Trash2 } from "lucide-react";
 
 import { ProductSalePicker } from "@/components/product-sale-picker";
 import { Button } from "@/components/ui/button";
@@ -154,61 +154,25 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
 
       <Card className="print-area bill-paper overflow-hidden">
         <CardContent className="p-0">
-          <div className="bill-topline" />
-          <div className="bill-header">
-            <div className="bill-brand-block">
-              <div className="bill-header-mark">
-                <FileText className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="bill-kicker">Mahalaxmi Power Tools</p>
-                <h2 className="bill-shop-name">{shop.name}</h2>
-                <p className="bill-shop-address">{shop.address}</p>
-              </div>
-            </div>
-            <div className="bill-document-panel">
-              <p className="bill-document-title">Invoice</p>
-              <div>
-                <span>Bill No</span>
-                <strong>{billNumber}</strong>
-              </div>
-              <div>
-                <span>Issued</span>
-                <strong>{todayLabel()}</strong>
-              </div>
+          <div className="bill-title-strip">
+            <p>Cash Bill</p>
+            <div>
+              <span>Invoice No: {billNumber}</span>
+              <span>Date: {todayLabel()}</span>
             </div>
           </div>
 
-          <div className="bill-body">
-            <div className="bill-party-grid">
-              <section className="bill-party-card bill-party-primary">
-                <span>Billed To</span>
-                <strong>{customer || "Walk-in Customer"}</strong>
-                <p>{phone ? `Phone: ${phone}` : "Customer phone not provided"}</p>
-              </section>
-              <section className="bill-party-card">
-                <span>Issued By</span>
-                <strong>{shop.name}</strong>
-                <p>Contact: {shop.contact}</p>
-              </section>
-              <section className="bill-party-card">
-                <span>Payment Terms</span>
-                <strong>Due on receipt</strong>
-                <p>Cash bill generated for retail purchase.</p>
-              </section>
-              <section className="bill-party-card">
-                <span>Document Type</span>
-                <strong>Original Copy</strong>
-                <p>Keep this bill for service or exchange reference.</p>
-              </section>
-            </div>
+          <div className="bill-company">
+            <h2>{shop.name}</h2>
+            <p>{shop.address}</p>
+            <p>Phone No: {shop.contact}</p>
+          </div>
 
-            <div className="bill-section-heading">
-              <div>
-                <span>Line Items</span>
-                <strong>{lines.length ? `${lines.length} item${lines.length === 1 ? "" : "s"}` : "No items"}</strong>
-              </div>
-              <p>Prices are shown in INR.</p>
+          <div className="bill-body">
+            <div className="bill-party-box">
+              <p className="bill-box-label">Party&apos;s Name: -</p>
+              <p className="bill-party-name">{customer || "Walk-in Customer"}</p>
+              <p>{phone ? `Phone: ${phone}` : "Phone: -"}</p>
             </div>
 
             <div className="bill-table-wrap">
@@ -216,7 +180,7 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
                 <thead>
                   <tr>
                     <th className="bill-col-index">#</th>
-                    <th>Description</th>
+                    <th>Particulars (Descriptions & Specifications)</th>
                     <th className="bill-col-sku">SKU</th>
                     <th className="bill-col-qty">Qty</th>
                     <th className="bill-col-money">Rate</th>
@@ -236,6 +200,16 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
                       <td className="bill-col-money bill-line-total">{formatCurrency(line.quantity * line.unitPrice)}</td>
                     </tr>
                   ))}
+                  {lines.length ? (
+                    <tr className="bill-filler-row" aria-hidden="true">
+                      <td />
+                      <td />
+                      <td />
+                      <td />
+                      <td />
+                      <td />
+                    </tr>
+                  ) : null}
                   {!lines.length ? (
                     <tr>
                       <td colSpan={6} className="bill-empty-row">
@@ -249,27 +223,23 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
 
             <div className="bill-lower-grid">
               <div className="bill-note">
-                <span>Terms</span>
+                <span>Terms & Conditions</span>
                 <p>Goods once sold will not be taken back without bill.</p>
               </div>
               <div className="bill-total-box">
                 <div className="bill-total-row">
-                  <span>Subtotal</span>
+                  <span>Total</span>
                   <strong>{formatCurrency(total)}</strong>
                 </div>
-                <div className="bill-total-row">
-                  <span>Adjustments</span>
-                  <strong>{formatCurrency(0)}</strong>
-                </div>
                 <div className="bill-grand-row">
-                  <span>Amount Payable</span>
+                  <span>Grand Total</span>
                   <strong>{formatCurrency(total)}</strong>
                 </div>
               </div>
             </div>
 
             <div className="bill-footer">
-              <p>Thank you for your business.</p>
+              <span />
               <div className="bill-signature">
                 <span />
                 <strong>Authorized Signature</strong>
