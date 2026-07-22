@@ -9,5 +9,9 @@ export function getPostgresConfigError() {
     return "DATABASE_URL must be a Postgres URL for server import and cloud backups. The live app data still stays in browser IndexedDB.";
   }
 
+  if (databaseUrl.includes("USER:PASSWORD@HOST") || databaseUrl.includes("replace")) {
+    return "DATABASE_URL is still a placeholder. Set it to the real Postgres connection string for server import and cloud backups.";
+  }
+
   return null;
 }
