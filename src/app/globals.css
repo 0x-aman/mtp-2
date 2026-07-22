@@ -57,6 +57,14 @@
   }
 }
 
+.bill-preview-wrapper {
+  width: 100%;
+  max-width: 860px;
+  margin-inline: auto;
+  overflow-x: auto;
+  padding: 0.25rem;
+}
+
 .bill-paper {
   border: 1px solid #111;
   border-radius: 0;
@@ -365,6 +373,13 @@
   .print-area,
   .print-area * {
     visibility: visible;
+  }
+
+  .bill-preview-wrapper {
+    max-width: none;
+    margin: 0;
+    overflow: visible;
+    padding: 0;
   }
 
   .print-area {

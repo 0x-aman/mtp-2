@@ -152,101 +152,103 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
         </CardContent>
       </Card>
 
-      <Card className="print-area bill-paper overflow-hidden">
-        <CardContent className="p-0">
-          <div className="bill-title-strip">
-            <p>Cash Bill</p>
-            <div>
-              <span>Invoice No: {billNumber}</span>
-              <span>Date: {todayLabel()}</span>
-            </div>
-          </div>
-
-          <div className="bill-company">
-            <h2>{shop.name}</h2>
-            <p>{shop.address}</p>
-            <p>Phone No: {shop.contact}</p>
-          </div>
-
-          <div className="bill-body">
-            <div className="bill-party-box">
-              <p className="bill-box-label">Party&apos;s Name: -</p>
-              <p className="bill-party-name">{customer || "Walk-in Customer"}</p>
-              <p>{phone ? `Phone: ${phone}` : "Phone: -"}</p>
+      <div className="bill-preview-wrapper">
+        <Card className="print-area bill-paper overflow-hidden">
+          <CardContent className="p-0">
+            <div className="bill-title-strip">
+              <p>Cash Bill</p>
+              <div>
+                <span>Invoice No: {billNumber}</span>
+                <span>Date: {todayLabel()}</span>
+              </div>
             </div>
 
-            <div className="bill-table-wrap">
-              <table className="bill-table">
-                <thead>
-                  <tr>
-                    <th className="bill-col-index">#</th>
-                    <th>Particulars (Descriptions & Specifications)</th>
-                    <th className="bill-col-sku">SKU</th>
-                    <th className="bill-col-qty">Qty</th>
-                    <th className="bill-col-money">Rate</th>
-                    <th className="bill-col-money">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.map((line, index) => (
-                    <tr key={line.key}>
-                      <td className="bill-col-index">{index + 1}</td>
-                      <td>
-                        <p className="bill-item-title">{line.title}</p>
-                      </td>
-                      <td className="bill-col-sku">{line.sku}</td>
-                      <td className="bill-col-qty">{line.quantity}</td>
-                      <td className="bill-col-money">{formatCurrency(line.unitPrice)}</td>
-                      <td className="bill-col-money bill-line-total">{formatCurrency(line.quantity * line.unitPrice)}</td>
-                    </tr>
-                  ))}
-                  {lines.length ? (
-                    <tr className="bill-filler-row" aria-hidden="true">
-                      <td />
-                      <td />
-                      <td />
-                      <td />
-                      <td />
-                      <td />
-                    </tr>
-                  ) : null}
-                  {!lines.length ? (
+            <div className="bill-company">
+              <h2>{shop.name}</h2>
+              <p>{shop.address}</p>
+              <p>Phone No: {shop.contact}</p>
+            </div>
+
+            <div className="bill-body">
+              <div className="bill-party-box">
+                <p className="bill-box-label">Party&apos;s Name: -</p>
+                <p className="bill-party-name">{customer || "Walk-in Customer"}</p>
+                <p>{phone ? `Phone: ${phone}` : "Phone: -"}</p>
+              </div>
+
+              <div className="bill-table-wrap">
+                <table className="bill-table">
+                  <thead>
                     <tr>
-                      <td colSpan={6} className="bill-empty-row">
-                        No items added.
-                      </td>
+                      <th className="bill-col-index">#</th>
+                      <th>Particulars (Descriptions & Specifications)</th>
+                      <th className="bill-col-sku">SKU</th>
+                      <th className="bill-col-qty">Qty</th>
+                      <th className="bill-col-money">Rate</th>
+                      <th className="bill-col-money">Amount</th>
                     </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="bill-lower-grid">
-              <div className="bill-note">
-                <p>no return, no exchange, no warranty</p>
+                  </thead>
+                  <tbody>
+                    {lines.map((line, index) => (
+                      <tr key={line.key}>
+                        <td className="bill-col-index">{index + 1}</td>
+                        <td>
+                          <p className="bill-item-title">{line.title}</p>
+                        </td>
+                        <td className="bill-col-sku">{line.sku}</td>
+                        <td className="bill-col-qty">{line.quantity}</td>
+                        <td className="bill-col-money">{formatCurrency(line.unitPrice)}</td>
+                        <td className="bill-col-money bill-line-total">{formatCurrency(line.quantity * line.unitPrice)}</td>
+                      </tr>
+                    ))}
+                    {lines.length ? (
+                      <tr className="bill-filler-row" aria-hidden="true">
+                        <td />
+                        <td />
+                        <td />
+                        <td />
+                        <td />
+                        <td />
+                      </tr>
+                    ) : null}
+                    {!lines.length ? (
+                      <tr>
+                        <td colSpan={6} className="bill-empty-row">
+                          No items added.
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
               </div>
-              <div className="bill-total-box">
-                <div className="bill-total-row">
-                  <span>Total</span>
-                  <strong>{formatCurrency(total)}</strong>
+
+              <div className="bill-lower-grid">
+                <div className="bill-note">
+                  <p>no return, no exchange, no warranty</p>
                 </div>
-                <div className="bill-grand-row">
-                  <span>Grand Total</span>
-                  <strong>{formatCurrency(total)}</strong>
+                <div className="bill-total-box">
+                  <div className="bill-total-row">
+                    <span>Total</span>
+                    <strong>{formatCurrency(total)}</strong>
+                  </div>
+                  <div className="bill-grand-row">
+                    <span>Grand Total</span>
+                    <strong>{formatCurrency(total)}</strong>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="bill-footer">
-              <span />
-              <div className="bill-signature">
+              <div className="bill-footer">
                 <span />
-                <strong>Authorized Signature</strong>
+                <div className="bill-signature">
+                  <span />
+                  <strong>Authorized Signature</strong>
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
