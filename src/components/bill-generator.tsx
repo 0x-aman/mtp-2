@@ -30,7 +30,7 @@ function todayLabel() {
 }
 
 function stampDateLabel() {
-  return todayLabel().toUpperCase();
+  return `- ${todayLabel().toUpperCase()} -`;
 }
 
 export function BillGenerator({ products, shop }: { products: ProductRecord[]; shop: ShopDetails }) {

@@ -319,9 +319,9 @@
 
 .bill-stamp-date {
   position: absolute;
-  top: 36%;
-  right: 11%;
-  left: 10%;
+  top: 35%;
+  right: 7%;
+  left: 6%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -331,6 +331,8 @@
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0;
+  transform: rotate(-4.8deg);
+  transform-origin: center;
   white-space: nowrap;
 }
 
