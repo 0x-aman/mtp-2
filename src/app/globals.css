@@ -154,6 +154,11 @@
 }
 
 .bill-table-wrap {
+  --bill-index-column: 2.2rem;
+  --bill-money-column: 6.5rem;
+  --bill-money-columns: 13rem;
+  --bill-right-fixed-columns: 16.5rem;
+  position: relative;
   margin-top: 0.55rem;
   min-height: 20rem;
   overflow-x: auto;
@@ -161,7 +166,22 @@
   border-radius: 0;
 }
 
+.bill-table-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    linear-gradient(#666, #666) var(--bill-index-column) 0 / 1px 100% no-repeat,
+    linear-gradient(#666, #666) calc(100% - var(--bill-right-fixed-columns)) 0 / 1px 100% no-repeat,
+    linear-gradient(#666, #666) calc(100% - var(--bill-money-columns)) 0 / 1px 100% no-repeat,
+    linear-gradient(#666, #666) calc(100% - var(--bill-money-column)) 0 / 1px 100% no-repeat;
+}
+
 .bill-table {
+  position: relative;
+  z-index: 1;
   width: 100%;
   min-width: 0;
   border-collapse: collapse;
