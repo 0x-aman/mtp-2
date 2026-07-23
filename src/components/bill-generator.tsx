@@ -29,6 +29,10 @@ function todayLabel() {
   }).format(new Date());
 }
 
+function stampDateLabel() {
+  return todayLabel().toUpperCase();
+}
+
 export function BillGenerator({ products, shop }: { products: ProductRecord[]; shop: ShopDetails }) {
   const [query, setQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<ProductRecord | null>(null);
@@ -248,7 +252,10 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
               {showStamp ? (
                 <div className="bill-footer">
                   <div className="bill-stamp">
-                    <img src="/stamp.png" alt={`${shop.name} stamp`} className="bill-stamp-image" draggable={false} />
+                    <img src="/stamp.png" alt={`${shop.name} stamp dated ${stampDateLabel()}`} className="bill-stamp-image" draggable={false} />
+                    <span className="bill-stamp-date" aria-hidden="true">
+                      {stampDateLabel()}
+                    </span>
                   </div>
                 </div>
               ) : null}

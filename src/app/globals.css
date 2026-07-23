@@ -305,6 +305,7 @@
 }
 
 .bill-stamp {
+  position: relative;
   width: min(14rem, 46vw);
   transform: rotate(-2deg);
 }
@@ -314,6 +315,23 @@
   width: 100%;
   height: auto;
   user-select: none;
+}
+
+.bill-stamp-date {
+  position: absolute;
+  top: 36%;
+  right: 11%;
+  left: 10%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f7f7;
+  color: #dc2626;
+  font-size: 1.55rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 @media (max-width: 639px) {
@@ -375,6 +393,10 @@
     width: 100%;
     max-width: 13rem;
     margin-left: auto;
+  }
+
+  .bill-stamp-date {
+    font-size: 1.4rem;
   }
 }
 
@@ -498,6 +520,10 @@
 
   .bill-stamp {
     width: 50mm;
+  }
+
+  .bill-stamp-date {
+    font-size: 14pt;
   }
 
   .no-print {
