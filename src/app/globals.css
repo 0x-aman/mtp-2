@@ -305,39 +305,15 @@
 }
 
 .bill-stamp {
-  display: grid;
-  place-items: center;
-  width: 10.5rem;
-  min-height: 5.2rem;
-  transform: rotate(-8deg);
-  border: 2px solid #1d4ed8;
-  border-radius: 999px;
-  color: #1d4ed8;
-  padding: 0.65rem 0.8rem;
-  text-align: center;
-  font-size: 0.58rem;
-  font-weight: 600;
-  line-height: 1.15;
-  text-transform: uppercase;
+  width: min(14rem, 46vw);
+  transform: rotate(-2deg);
 }
 
-.bill-stamp strong {
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  font-size: 0.7rem;
-  line-height: 1.05;
-}
-
-.bill-stamp span {
-  max-width: 100%;
-  overflow-wrap: anywhere;
-}
-
-.bill-stamp em {
-  color: #dc2626;
-  font-size: 0.68rem;
-  font-style: normal;
-  font-weight: 800;
+.bill-stamp-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
 }
 
 @media (max-width: 639px) {
@@ -397,7 +373,7 @@
 
   .bill-stamp {
     width: 100%;
-    max-width: 10.5rem;
+    max-width: 13rem;
     margin-left: auto;
   }
 }
@@ -521,19 +497,7 @@
   }
 
   .bill-stamp {
-    width: 42mm;
-    min-height: 22mm;
-    border-width: 1.5pt;
-    padding: 2.5mm 3mm;
-    font-size: 5.8pt;
-  }
-
-  .bill-stamp strong {
-    font-size: 6.8pt;
-  }
-
-  .bill-stamp em {
-    font-size: 6.5pt;
+    width: 50mm;
   }
 
   .no-print {

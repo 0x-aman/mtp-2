@@ -247,11 +247,8 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
 
               {showStamp ? (
                 <div className="bill-footer">
-                  <div className="bill-stamp" aria-label={`${shop.name} stamp`}>
-                    <strong>{shop.name}</strong>
-                    <span>{shop.address}</span>
-                    <span>Phone: {shop.contact}</span>
-                    <em>{todayLabel()}</em>
+                  <div className="bill-stamp">
+                    <img src="/stamp.png" alt={`${shop.name} stamp`} className="bill-stamp-image" draggable={false} />
                   </div>
                 </div>
               ) : null}

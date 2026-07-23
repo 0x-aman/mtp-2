@@ -628,7 +628,7 @@ export function SalesManager({
   const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
   const [deletingSaleId, setDeletingSaleId] = useState<string | null>(null);
   const [syncingSaleIds, setSyncingSaleIds] = useState<string[]>([]);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
   const [expandedHistoryDays, setExpandedHistoryDays] = useState<Set<string>>(() => new Set());
   const [, startTransition] = useTransition();
 
@@ -690,12 +690,11 @@ export function SalesManager({
 
     return rankedProducts(productsForDraft, productQuery, 6);
   }, [bulkCursor, bulkText, productsForDraft]);
+  const todayKey = todayInputValue();
   const allSales = useMemo(() => sortSales(visibleSales), [visibleSales]);
+  const todaySales = useMemo(() => allSales.filter((sale) => saleDateInputValue(sale.saleDate) === todayKey), [allSales, todayKey]);
   const salesDayGroups = useMemo(() => groupSalesByDay(allSales), [allSales]);
-  const todaySalesCount = useMemo(
-    () => visibleSales.filter((sale) => saleDateInputValue(sale.saleDate) === todayInputValue()).length,
-    [visibleSales]
-  );
+  const todaySalesCount = todaySales.length;
   const allSalesRevenue = allSales.reduce((total, sale) => total + sale.subtotal, 0);
   const allSalesItems = allSales.reduce((total, sale) => total + saleItemCount(sale), 0);
   const allSalesProfit = allSales.reduce((total, sale) => total + sale.grossProfit, 0);
@@ -1340,6 +1339,35 @@ export function SalesManager({
           </div>
         </CardContent>
       </Card>
+
+      <section className="grid gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Today&apos;s Sales</h2>
+          <p className="text-xs text-muted-foreground">
+            {todaySales.length ? `${todaySalesCount} logs / ${visibleMetrics.todayItems} items` : "No sales logged today."}
+          </p>
+        </div>
+
+        <div className="overflow-hidden rounded-lg border bg-card">
+          {todaySales.length ? (
+            <div className="grid">
+              {todaySales.map((sale) => (
+                <SalesLogCard
+                  key={sale.id}
+                  sale={sale}
+                  showMargin={displaySettings.showMargin}
+                  onEdit={startEditSale}
+                  onDelete={deleteSale}
+                  isDeleting={deletingSaleId === sale.id}
+                  isSyncing={syncingSaleIds.includes(sale.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-6 text-center text-sm text-muted-foreground">No sales logged today.</div>
+          )}
+        </div>
+      </section>
 
       <section className="grid gap-3">
         <div className="flex items-center justify-between gap-3">
