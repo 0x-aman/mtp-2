@@ -1,10 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
-import { Download, Loader2, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { Plus, Printer, Trash2 } from "lucide-react";
 
 import { ProductSalePicker } from "@/components/product-sale-picker";
 import { Button } from "@/components/ui/button";
@@ -37,7 +34,6 @@ function stampDateLabel() {
 }
 
 export function BillGenerator({ products, shop }: { products: ProductRecord[]; shop: ShopDetails }) {
-  const billRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<ProductRecord | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -45,7 +41,6 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
   const [customer, setCustomer] = useState("");
   const [phone, setPhone] = useState("");
   const [showStamp, setShowStamp] = useState(true);
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [lines, setLines] = useState<BillLine[]>([]);
   const billNumber = `MPT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`;
   const total = lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
@@ -79,43 +74,13 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
     setUnitPrice(0);
   };
 
-  const downloadPdf = async () => {
-    if (!billRef.current || !lines.length || downloadingPdf) {
-      return;
-    }
-
-    setDownloadingPdf(true);
-
-    try {
-      await document.fonts?.ready;
-
-      const canvas = await html2canvas(billRef.current, {
-        backgroundColor: "#ffffff",
-        scale: Math.min(3, Math.max(2, window.devicePixelRatio || 1)),
-        useCORS: true
-      });
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const maxWidth = pageWidth * 0.8;
-      const maxHeight = pageHeight - 20;
-      let imageWidth = maxWidth;
-      let imageHeight = (canvas.height * imageWidth) / canvas.width;
-
-      if (imageHeight > maxHeight) {
-        imageHeight = maxHeight;
-        imageWidth = (canvas.width * imageHeight) / canvas.height;
-      }
-
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", (pageWidth - imageWidth) / 2, 10, imageWidth, imageHeight);
-      pdf.save(`${billNumber}.pdf`);
-      toast.success(`Downloaded ${billNumber}.pdf`);
-    } catch (error) {
-      console.error(error);
-      toast.error("Could not download PDF.");
-    } finally {
-      setDownloadingPdf(false);
-    }
+  const printBill = () => {
+    const previousTitle = document.title;
+    document.title = billNumber;
+    window.print();
+    window.setTimeout(() => {
+      document.title = previousTitle;
+    }, 500);
   };
 
   return (
@@ -199,9 +164,9 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
                 <Switch id="billShowStamp" checked={showStamp} onCheckedChange={setShowStamp} />
                 <Label htmlFor="billShowStamp">Show stamp</Label>
               </div>
-              <Button type="button" disabled={!lines.length || downloadingPdf} onClick={downloadPdf}>
-                {downloadingPdf ? <Loader2 className="animate-spin" /> : <Download />}
-                {downloadingPdf ? "Preparing PDF" : "Download PDF"}
+              <Button type="button" disabled={!lines.length} onClick={printBill}>
+                <Printer />
+                Export PDF
               </Button>
             </div>
           </div>
@@ -209,7 +174,7 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
       </Card>
 
       <div className="bill-preview-wrapper">
-        <div ref={billRef} className="print-area bill-paper overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-subtle">
+        <Card className="print-area bill-paper overflow-hidden">
           <CardContent className="p-0">
             <div className="bill-title-strip">
               <p>Cash Bill</p>
@@ -305,7 +270,7 @@ export function BillGenerator({ products, shop }: { products: ProductRecord[]; s
               ) : null}
             </div>
           </CardContent>
-        </div>
+        </Card>
       </div>
     </div>
   );
